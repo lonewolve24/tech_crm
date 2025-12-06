@@ -1,0 +1,182 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}Repair Transactions - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-tools"></i> Repair Transactions</h1>
+    {% if perms.repair_shop.add_gadgetrepairtransaction %}
+    <a href="{% url 'repair_shop:create_repair_transaction' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> New Repair
+    </a>
+    {% endif %}
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ stats.total }}</h3>
+                <p class="text-muted mb-0">Total Repairs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">{{ stats.pending }}</h3>
+                <p class="text-muted mb-0">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-info">{{ stats.in_progress }}</h3>
+                <p class="text-muted mb-0">In Progress</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ stats.completed }}</h3>
+                <p class="text-muted mb-0">Completed</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control" placeholder="Search by code, brand, technician..." 
+                    value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-6">
+                <button type="submit" class="btn btn-info">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                {% if request.GET.search %}
+                <a href="{% url 'repair_shop:repair_transaction_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-table"></i> All Repair Transactions
+            {% if transactions %}
+            <span class="badge bg-primary float-end">{{ transactions.count }} transactions</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if transactions %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Code</th>
+                        <th>Gadget</th>
+                        <th>Customer</th>
+                        <th>Technician</th>
+                        <th>Status</th>
+                        <th>Brought In</th>
+                        <th>Logs</th>
+                        <th>Total Cost</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td><strong>{{ transaction.transaction_code }}</strong></td>
+                        <td>
+                            {{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}
+                        </td>
+                        <td>
+                            <a href="{% url 'repair_shop:customer_detail' transaction.gadget.customer.id %}">
+                                {{ transaction.gadget.customer.first_name }} {{ transaction.gadget.customer.last_name }}
+                            </a>
+                        </td>
+                        <td>{{ transaction.technician.username|default:"Unassigned" }}</td>
+                        <td>
+                            {% if transaction.status == 'Pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif transaction.status == 'In Progress' %}
+                                <span class="badge bg-info">In Progress</span>
+                            {% elif transaction.status == 'Completed' %}
+                                <span class="badge bg-success">Completed</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ transaction.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ transaction.brought_in_date|date:"M d, Y" }}</td>
+                        <td>
+                            <span class="badge bg-primary">{{ transaction.repair_logs.count }}</span>
+                        </td>
+                        <td>₵{{ transaction.total_cost }}</td>
+                        <td>
+                            <!-- View -->
+                            <a href="{% url 'repair_shop:repair_transaction_detail' transaction.id %}" 
+                               class="btn btn-sm btn-info" title="View Details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+
+                            <!-- Edit -->
+                            {% if perms.repair_shop.change_gadgetrepairtransaction %}
+                            <a href="{% url 'repair_shop:update_repair_transaction' transaction.id %}" 
+                               class="btn btn-sm btn-warning" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+
+                            <!-- Reassign Technician -->
+                            <a href="{% url 'repair_shop:reassign_technician' transaction.id %}" 
+                               class="btn btn-sm btn-secondary" title="Reassign Technician">
+                                <i class="bi bi-person-check"></i>
+                            </a>
+                            {% endif %}
+
+                            <!-- Create Receipt (only if completed) -->
+                            {% if perms.repair_shop.add_gadgettransactionreceipt %}
+                                {% if transaction.status == 'Completed' %}
+                                <a href="{% url 'repair_shop:create_transaction_receipt' transaction.id %}" 
+                                   class="btn btn-sm btn-success" title="Create Receipt">
+                                    <i class="bi bi-receipt"></i>
+                                </a>
+                                {% else %}
+                                <button class="btn btn-sm btn-success" disabled title="Repair must be completed first">
+                                    <i class="bi bi-receipt"></i>
+                                </button>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle"></i>
+            <strong>No repair transactions found.</strong>
+            {% if perms.repair_shop.add_gadgetrepairtransaction %}
+            <a href="{% url 'repair_shop:create_repair_transaction' %}" class="alert-link">Create one now.</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

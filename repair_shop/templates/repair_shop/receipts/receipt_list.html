@@ -1,0 +1,103 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}Transaction Receipts - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-receipt"></i> Transaction Receipts</h1>
+</div>
+
+<!-- Search Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control" placeholder="Search by receipt #, transaction code, customer..." 
+                    value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-6">
+                <button type="submit" class="btn btn-info">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                {% if request.GET.search %}
+                <a href="{% url 'repair_shop:receipt_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Receipts Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-table"></i> All Receipts
+            {% if receipts %}
+            <span class="badge bg-primary float-end">{{ receipts.count }} receipts</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if receipts %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Receipt #</th>
+                        <th>Transaction Code</th>
+                        <th>Gadget</th>
+                        <th>Customer</th>
+                        <th>Amount Paid</th>
+                        <th>Issued Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for receipt in receipts %}
+                    <tr>
+                        <td><strong>{{ receipt.receipt_number }}</strong></td>
+                        <td>{{ receipt.transaction.transaction_code }}</td>
+                        <td>
+                            {{ receipt.transaction.gadget.gadget_brand }} {{ receipt.transaction.gadget.gadget_model }}
+                        </td>
+                        <td>
+                            <a href="{% url 'repair_shop:customer_detail' receipt.transaction.gadget.customer.id %}">
+                                {{ receipt.transaction.gadget.customer.first_name }} {{ receipt.transaction.gadget.customer.last_name }}
+                            </a>
+                        </td>
+                        <td>
+                            <strong class="text-success">₵{{ receipt.amount_paid }}</strong>
+                        </td>
+                        <td>{{ receipt.issued_date|date:"M d, Y" }}</td>
+                        <td>
+                            <!-- View -->
+                            <a href="{% url 'repair_shop:receipt_detail' receipt.id %}" 
+                               class="btn btn-sm btn-info" title="View Receipt">
+                                <i class="bi bi-eye"></i>
+                            </a>
+
+                            <!-- Print -->
+                            <a href="{% url 'repair_shop:receipt_detail' receipt.id %}?print=1" 
+                               class="btn btn-sm btn-secondary" title="Print Receipt">
+                                <i class="bi bi-printer"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle"></i>
+            <strong>No receipts found.</strong> Receipts are created for completed repair transactions.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+

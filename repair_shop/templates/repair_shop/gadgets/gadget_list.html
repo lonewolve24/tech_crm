@@ -1,0 +1,156 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}Gadgets - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-phone"></i> Gadgets</h1>
+    {% if perms.repair_shop.add_gadget %}
+    <a href="{% url 'repair_shop:create_gadget' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Register New Gadget
+    </a>
+    {% endif %}
+</div>
+
+<!-- Search Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <input type="text" name="search" class="form-control" placeholder="Search by brand, model, IMEI, or customer..." 
+                    value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-6">
+                <button type="submit" class="btn btn-info">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                {% if request.GET.search %}
+                <a href="{% url 'repair_shop:gadget_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Gadgets Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-table"></i> Gadget Inventory
+            {% if gadgets %}
+            <span class="badge bg-primary float-end">{{ gadgets.count }} gadgets</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if gadgets %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th>Brand & Model</th>
+                        <th>IMEI</th>
+                        <th>Customer</th>
+                        <th>Repairs</th>
+                        <th>Registered</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for gadget in gadgets %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-info">{{ gadget.get_gadget_type_display }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ gadget.gadget_brand }}</strong> {{ gadget.gadget_model }}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ gadget.imei_number|default:"N/A" }}</small>
+                        </td>
+                        <td>
+                            <a href="{% url 'repair_shop:customer_detail' gadget.customer.id %}">
+                                {{ gadget.customer.first_name }} {{ gadget.customer.last_name }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge bg-warning">
+                                {{ gadget.gadgetrepairtransaction_set.count }}
+                            </span>
+                        </td>
+                        <td>
+                            {{ gadget.created_at|date:"M d, Y" }}
+                        </td>
+                        <td>
+                            <!-- View Button -->
+                            <a href="{% url 'repair_shop:gadget_detail' gadget.id %}" 
+                               class="btn btn-sm btn-info" title="View Details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+
+                            <!-- Edit Button -->
+                            {% if perms.repair_shop.change_gadget %}
+                            <a href="{% url 'repair_shop:update_gadget' gadget.id %}" 
+                               class="btn btn-sm btn-warning" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+
+                            <!-- Delete Button (Superuser Only) -->
+                            {% if user.is_superuser %}
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    data-bs-toggle="modal" data-bs-target="#deleteModal{{ gadget.id }}"
+                                    title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+
+                            <!-- Delete Modal -->
+                            <div class="modal fade" id="deleteModal{{ gadget.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Delete Gadget</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Are you sure you want to delete <strong>{{ gadget.gadget_brand }} {{ gadget.gadget_model }}</strong>?</p>
+                                            <p class="text-danger"><small>This action cannot be undone.</small></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <a href="{% url 'repair_shop:delete_gadget' gadget.id %}" 
+                                               class="btn btn-danger">
+                                                Delete
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle"></i>
+            <strong>No gadgets found.</strong>
+            {% if perms.repair_shop.add_gadget %}
+            <a href="{% url 'repair_shop:create_gadget' %}" class="alert-link">Register one now.</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+

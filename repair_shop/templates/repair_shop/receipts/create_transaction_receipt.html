@@ -1,0 +1,76 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}Create Receipt - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-receipt"></i> Create Transaction Receipt</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 offset-lg-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ transaction.transaction_code }}</h5>
+            </div>
+            <div class="card-body">
+                <!-- Transaction Summary -->
+                <div class="bg-light p-3 mb-4 rounded">
+                    <h6 class="mb-2"><i class="bi bi-info-circle"></i> Repair Summary</h6>
+                    <p class="mb-1"><strong>Gadget:</strong> {{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}</p>
+                    <p class="mb-1"><strong>Customer:</strong> {{ transaction.gadget.customer.first_name }} {{ transaction.gadget.customer.last_name }}</p>
+                    <p class="mb-1"><strong>Technician:</strong> {{ transaction.technician.get_full_name }}</p>
+                    <p class="mb-1"><strong>Repair Logs:</strong> {{ transaction.repair_logs.count }}</p>
+                    <p class="mb-0"><strong>Total Repair Cost:</strong> <span class="text-primary h5">₵{{ total_cost }}</span></p>
+                </div>
+
+                <!-- Form -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Amount Paid -->
+                    <div class="mb-3">
+                        <label for="{{ form.amount_paid.id_for_label }}" class="form-label">
+                            <i class="bi bi-currency-dollar"></i> Amount Paid (₵) *
+                        </label>
+                        {{ form.amount_paid }}
+                        <small class="form-text text-muted">Must match the total repair cost of ₵{{ total_cost }}</small>
+                        {% if form.amount_paid.errors %}
+                        <div class="alert alert-danger mt-2">{{ form.amount_paid.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading">Form Errors</h5>
+                        {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Receipt
+                        </button>
+                        <a href="{% url 'repair_shop:repair_transaction_detail' transaction.id %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Info Alert -->
+        <div class="alert alert-info mt-4" role="alert">
+            <i class="bi bi-info-circle"></i> 
+            <strong>Important:</strong> The amount paid must exactly match the total repair cost. Once created, the receipt cannot be modified.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

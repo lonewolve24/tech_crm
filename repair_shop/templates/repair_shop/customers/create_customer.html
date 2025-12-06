@@ -1,0 +1,597 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Edit Customer - Tech CRM
+    {% else %}
+        Add New Customer - Tech CRM
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== MODERN FORM STYLING ===== */
+    .page-header {
+        margin-bottom: 3rem;
+    }
+
+    .page-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+    }
+
+    .page-header small {
+        font-size: 1rem;
+        color: #999;
+    }
+
+    /* ===== FORM CARD STYLING ===== */
+    .form-card {
+        border: none;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        border-radius: 16px;
+        overflow: hidden;
+        background: white;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .form-card:hover {
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.16);
+        transform: translateY(-2px);
+    }
+
+    .form-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2.5rem;
+        border: none;
+    }
+
+    .form-card .card-header h5 {
+        font-weight: 700;
+        margin: 0;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .form-card .card-header i {
+        font-size: 1.8rem;
+    }
+
+    /* ===== FORM BODY ===== */
+    .form-card .card-body {
+        padding: 3rem;
+    }
+
+    /* ===== FORM GROUP WRAPPER ===== */
+    .form-group-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2.5rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .form-group-wrapper.full {
+        grid-template-columns: 1fr;
+    }
+
+    @media (max-width: 768px) {
+        .form-group-wrapper {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        
+        .form-card .card-body {
+            padding: 2rem;
+        }
+        
+        .page-header h1 {
+            font-size: 2rem;
+        }
+    }
+
+    /* ===== FORM LABELS ===== */
+    .form-label {
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1rem;
+        text-transform: capitalize;
+        letter-spacing: 0.3px;
+    }
+
+    .form-label i {
+        color: #667eea;
+        font-size: 1.25rem;
+    }
+
+    /* ===== FORM INPUTS ===== */
+    .form-control, .form-select {
+        border: 2px solid #e8e8e8;
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 1rem;
+        background: #fafafa;
+        min-height: 50px;
+        font-weight: 500;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+        background: white;
+        outline: none;
+    }
+
+    .form-control::placeholder {
+        color: #b0b0b0;
+        font-weight: 400;
+    }
+
+    .form-control:hover, .form-select:hover {
+        border-color: #667eea;
+        background: white;
+    }
+
+    /* ===== ERROR MESSAGES ===== */
+    .invalid-feedback {
+        color: #dc3545;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        display: block;
+        font-weight: 500;
+    }
+
+    .text-danger {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    /* ===== SECTION DIVIDERS ===== */
+    .section-divider {
+        margin-top: 3rem;
+        margin-bottom: 2rem;
+        padding-top: 2rem;
+        border-top: 2px solid #f0f0f0;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #667eea;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 3px solid #667eea;
+        width: fit-content;
+    }
+
+    .section-title i {
+        font-size: 1.3rem;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn-group-custom {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e8e8e8;
+    }
+
+    .btn-custom {
+        flex: 1;
+        padding: 1rem 2rem;
+        font-weight: 700;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        min-height: 55px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary-custom:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.45);
+        color: white;
+    }
+
+    .btn-primary-custom:active {
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary-custom {
+        background: white;
+        color: #333;
+        border: 2px solid #e8e8e8;
+        text-decoration: none !important;
+    }
+
+    .btn-secondary-custom:hover {
+        background: #f5f5f5;
+        border-color: #667eea;
+        color: #667eea;
+        transform: translateY(-3px);
+    }
+
+    /* ===== HELP CARD ===== */
+    .help-card {
+        border: none;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        position: sticky;
+        top: 20px;
+    }
+
+    .help-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 2rem;
+    }
+
+    .help-card .card-header h5 {
+        font-weight: 700;
+        margin: 0;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .help-card .card-body {
+        padding: 2rem;
+        background: white;
+    }
+
+    .help-card h6 {
+        color: #667eea;
+        font-weight: 700;
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .help-card h6:first-child {
+        margin-top: 0;
+    }
+
+    .help-card ul {
+        margin: 0;
+        padding: 0;
+    }
+
+    .help-card li {
+        padding: 0.5rem 0;
+        line-height: 1.8;
+    }
+
+    .help-card .alert {
+        margin-top: 1.5rem;
+        margin-bottom: 0;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 2px solid #667eea;
+        border-radius: 12px;
+    }
+
+    /* ===== ALERT ERRORS ===== */
+    .alert {
+        border-radius: 12px;
+        padding: 1.5rem;
+        font-weight: 500;
+        margin-bottom: 2rem;
+        border: none;
+    }
+
+    .alert-danger {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 992px) {
+        .help-card {
+            position: static;
+            margin-top: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
+    <div class="page-header">
+        <h1>
+            {% if form.instance.pk %}
+                <i class="bi bi-pencil-square"></i> Edit Customer
+            {% else %}
+                <i class="bi bi-plus-circle"></i> Add New Customer
+            {% endif %}
+        </h1>
+        {% if not form.instance.pk %}
+        <small class="text-muted">Create a new customer profile in your system</small>
+        {% else %}
+        <small class="text-muted">Update customer information</small>
+        {% endif %}
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+        <div class="card form-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi {% if form.instance.pk %}bi-pencil-fill{% else %}bi-plus-lg{% endif %}"></i>
+                    {% if form.instance.pk %}
+                        Update Customer Information
+                    {% else %}
+                        Enter Customer Details
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate id="customerForm">
+                    {% csrf_token %}
+
+                    <!-- Display Form Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill"></i> <strong>Error!</strong>
+                        {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    <!-- Personal Information Section -->
+                    <div class="section-title">
+                        <i class="bi bi-person-badge"></i> Personal Information
+                    </div>
+
+                    <div class="form-group-wrapper">
+                        <!-- First Name Field -->
+                        <div>
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                <i class="bi bi-person"></i> First Name
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.first_name.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Last Name Field -->
+                        <div>
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                <i class="bi bi-person"></i> Last Name
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.last_name.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Contact Information Section -->
+                    <div class="section-divider">
+                        <div class="section-title">
+                            <i class="bi bi-telephone"></i> Contact Information
+                        </div>
+                    </div>
+
+                    <div class="form-group-wrapper">
+                        <!-- Email Field -->
+                        <div>
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                <i class="bi bi-envelope"></i> Email Address
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.email.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Phone Number Field -->
+                        <div>
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                                <i class="bi bi-telephone"></i> Phone Number
+                            </label>
+                            {{ form.phone_number }}
+                            {% if form.phone_number.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.phone_number.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Address Field (Full Width) -->
+                    <div class="form-group-wrapper full">
+                        <div>
+                            <label for="{{ form.address.id_for_label }}" class="form-label">
+                                <i class="bi bi-geo-alt"></i> Address
+                            </label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.address.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Identification Section -->
+                    <div class="section-divider">
+                        <div class="section-title">
+                            <i class="bi bi-card-text"></i> Identification
+                        </div>
+                    </div>
+
+                    <div class="form-group-wrapper">
+                        <!-- ID Type Field -->
+                        <div>
+                            <label for="{{ form.id_type.id_for_label }}" class="form-label">
+                                <i class="bi bi-card-text"></i> ID Type
+                            </label>
+                            {{ form.id_type }}
+                            {% if form.id_type.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.id_type.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- ID Number Field -->
+                        <div>
+                            <label for="{{ form.id_number.id_for_label }}" class="form-label">
+                                <i class="bi bi-123"></i> ID Number
+                            </label>
+                            {{ form.id_number }}
+                            {% if form.id_number.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.id_number.errors %}{{ error }}{% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="btn-group-custom">
+                        <button type="submit" class="btn btn-custom btn-primary-custom">
+                            <i class="bi bi-check-circle"></i> 
+                            {% if form.instance.pk %}
+                                Update Customer
+                            {% else %}
+                                Create Customer
+                            {% endif %}
+                        </button>
+                        <a href="{% url 'repair_shop:customer_list' %}" class="btn btn-custom btn-secondary-custom text-decoration-none">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Sidebar -->
+    <div class="col-lg-4">
+        <div class="card help-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-question-circle-fill"></i> Form Guide</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6 style="color: #667eea; font-weight: 700;">
+                        <i class="bi bi-asterisk"></i> Required Fields
+                    </h6>
+                    <p><small>Fields marked with <span class="text-danger">*</span> must be filled.</small></p>
+                </div>
+
+                <div class="mb-4">
+                    <h6 style="color: #667eea; font-weight: 700;">
+                        <i class="bi bi-list-check"></i> ID Types
+                    </h6>
+                    <ul class="list-unstyled small" style="line-height: 1.8;">
+                        <li>🪪 <strong>Driver's License</strong></li>
+                        <li>📕 <strong>Passport</strong></li>
+                        <li>🆔 <strong>National ID</strong></li>
+                        <li>🗳️ <strong>Voter's Card</strong></li>
+                        <li>📄 <strong>Other</strong></li>
+                    </ul>
+                </div>
+
+                <div class="mb-4">
+                    <h6 style="color: #667eea; font-weight: 700;">
+                        <i class="bi bi-lightbulb"></i> Tips
+                    </h6>
+                    <ul class="list-unstyled small" style="line-height: 1.8;">
+                        <li>✓ Use <strong>real</strong> customer information</li>
+                        <li>✓ Email helps with <strong>communication</strong></li>
+                        <li>✓ ID number must be <strong>unique</strong></li>
+                        <li>✓ Phone number is <strong>optional</strong> but helpful</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-info" style="border-radius: 8px; border: none;">
+                    <i class="bi bi-info-circle"></i>
+                    <small><strong>After creating a customer,</strong> you can register their gadgets and create repair tickets.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add smooth transitions
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('customerForm');
+        if (form) {
+            form.addEventListener('submit', function() {
+                // Show loading state
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+                }
+            });
+        }
+
+        // Add focus animations to form controls
+        const inputs = document.querySelectorAll('.form-control, .form-select');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            input.addEventListener('blur', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}
+

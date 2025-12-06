@@ -1,0 +1,83 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}Reassign Technician - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-person-check"></i> Reassign Technician</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 offset-lg-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Transaction: {{ transaction.transaction_code }}</h5>
+            </div>
+            <div class="card-body">
+                <!-- Current Info -->
+                <div class="bg-light p-3 mb-4 rounded">
+                    <h6 class="mb-2"><i class="bi bi-info-circle"></i> Current Assignment</h6>
+                    <p class="mb-1"><strong>Gadget:</strong> {{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}</p>
+                    <p class="mb-1"><strong>Current Technician:</strong> {{ current_technician.get_full_name }}</p>
+                    <p class="mb-0"><strong>Status:</strong> 
+                        {% if transaction.status == 'PENDING' %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% elif transaction.status == 'IN_PROGRESS' %}
+                            <span class="badge bg-info">In Progress</span>
+                        {% elif transaction.status == 'COMPLETED' %}
+                            <span class="badge bg-success">Completed</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ transaction.status }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+
+                <!-- Form -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- New Technician -->
+                    <div class="mb-3">
+                        <label for="{{ form.technician.id_for_label }}" class="form-label">
+                            <i class="bi bi-person-badge"></i> Assign New Technician *
+                        </label>
+                        {{ form.technician }}
+                        {% if form.technician.errors %}
+                        <div class="alert alert-danger mt-2">{{ form.technician.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading">Form Errors</h5>
+                        {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Reassign Technician
+                        </button>
+                        <a href="{% url 'repair_shop:repair_transaction_detail' transaction.id %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Info Alert -->
+        <div class="alert alert-info mt-4" role="alert">
+            <i class="bi bi-info-circle"></i> 
+            <strong>Note:</strong> Reassigning a technician will transfer all associated repair logs to the new technician.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

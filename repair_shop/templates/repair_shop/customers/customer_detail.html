@@ -1,0 +1,272 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}{{ customer.first_name }} {{ customer.last_name }} - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="bi bi-person-circle"></i> 
+        {{ customer.first_name }} {{ customer.last_name }}
+    </h1>
+    <div>
+        {% if perms.repair_shop.change_customer %}
+        <a href="{% url 'repair_shop:update_customer' customer.id %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        {% endif %}
+        {% if user.is_superuser %}
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="bi bi-trash"></i> Delete
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Customer Information -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>Name:</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        {{ customer.first_name }} {{ customer.last_name }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>Email:</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        {% if customer.email %}
+                        <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                        {% else %}
+                        <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>Phone:</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        {% if customer.phone_number %}
+                        <a href="tel:{{ customer.phone_number }}">{{ customer.phone_number }}</a>
+                        {% else %}
+                        <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>Address:</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        {{ customer.address|default:"N/A" }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>ID Type:</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        <span class="badge bg-info">{{ customer.get_id_type_display }}</span>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>ID Number:</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        {{ customer.id_number|default:"N/A" }}
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row mb-3">
+                    <div class="col-sm-4">
+                        <strong>Member Since:</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        {{ customer.created_at|date:"F d, Y" }}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-4">
+                        <strong>Last Updated:</strong>
+                    </div>
+                    <div class="col-sm-8">
+                        {{ customer.updated_at|date:"F d, Y H:i" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Statistics -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-6">
+                        <div class="stat-card pending">
+                            <h3 class="stat-value">{{ customer_gadgets|length }}</h3>
+                            <p class="stat-label">Gadgets Registered</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="stat-card in-progress">
+                            <h3 class="stat-value">{{ total_repairs }}</h3>
+                            <p class="stat-label">Total Repairs</p>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h6 class="mb-3">Status Summary</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <span class="badge bg-warning">Pending:</span>
+                        <strong>{{ pending_repairs }}</strong>
+                    </li>
+                    <li class="mb-2">
+                        <span class="badge bg-info">In Progress:</span>
+                        <strong>{{ inprogress_repairs }}</strong>
+                    </li>
+                    <li>
+                        <span class="badge bg-success">Completed:</span>
+                        <strong>{{ completed_repairs }}</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gadgets Section -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-phone"></i> Gadgets</h5>
+            {% if perms.repair_shop.add_gadget %}
+            <a href="{% url 'repair_shop:create_gadget' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-circle"></i> Register Gadget
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        {% if customer_gadgets %}
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Brand</th>
+                        <th>Model</th>
+                        <th>Type</th>
+                        <th>IMEI</th>
+                        <th>Repairs</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for gadget in customer_gadgets %}
+                    <tr>
+                        <td><strong>{{ gadget.gadget_brand }}</strong></td>
+                        <td>{{ gadget.gadget_model }}</td>
+                        <td><span class="badge bg-secondary">{{ gadget.get_gadget_type_display }}</span></td>
+                        <td><small>{{ gadget.imei_number|default:"N/A" }}</small></td>
+                        <td>
+                            <span class="badge bg-info">
+                                {{ gadget.gadgetrepairtransaction_set.count }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'repair_shop:gadget_detail' gadget.id %}" class="btn btn-sm btn-info" title="View Details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if perms.repair_shop.change_gadget %}
+                            <a href="{% url 'repair_shop:update_gadget' gadget.id %}" class="btn btn-sm btn-warning" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                            
+                            <!-- Add to Repair Button (only if no active repair) -->
+                            {% if perms.repair_shop.add_gadgetrepairtransaction %}
+                                {% if gadget.has_active_repair %}
+                                <button class="btn btn-sm btn-secondary" disabled title="Gadget has active repair">
+                                    <i class="bi bi-wrench"></i>
+                                </button>
+                                {% else %}
+                                <a href="{% url 'repair_shop:create_repair_transaction' %}?gadget={{ gadget.id }}" 
+                                   class="btn btn-sm btn-success" title="Create Repair">
+                                    <i class="bi bi-wrench"></i>
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No gadgets registered yet.
+            {% if perms.repair_shop.add_gadget %}
+            <a href="{% url 'repair_shop:create_gadget' %}" class="alert-link">Register one now</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Back Button -->
+<div class="mt-4">
+    <a href="{% url 'repair_shop:customer_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Customers
+    </a>
+</div>
+
+<!-- Delete Confirmation Modal -->
+{% if user.is_superuser %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong>{{ customer.first_name }} {{ customer.last_name }}</strong>?</p>
+                <p class="text-danger"><small>This action cannot be undone and all associated gadgets will be deleted.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'repair_shop:delete_customer' customer.id %}" class="btn btn-danger">
+                    Delete
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+

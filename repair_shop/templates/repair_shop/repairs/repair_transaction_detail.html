@@ -1,0 +1,191 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}{{ transaction.transaction_code }} - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-tools"></i> {{ transaction.transaction_code }}</h1>
+    <div class="btn-group" role="group">
+        {% if perms.repair_shop.change_gadgetrepairtransaction %}
+        <a href="{% url 'repair_shop:update_repair_transaction' transaction.id %}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> Edit
+        </a>
+        <a href="{% url 'repair_shop:reassign_technician' transaction.id %}" class="btn btn-info">
+            <i class="bi bi-person-check"></i> Reassign
+        </a>
+        {% endif %}
+
+        {% if perms.repair_shop.add_gadgetrepairlog and transaction.status != 'COMPLETED' %}
+        <a href="{% url 'repair_shop:add_repair_log' transaction.id %}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Add Log
+        </a>
+        {% endif %}
+
+        {% if perms.repair_shop.add_gadgettransactionreceipt and transaction.status == 'COMPLETED' %}
+        <a href="{% url 'repair_shop:create_transaction_receipt' transaction.id %}" class="btn btn-primary">
+            <i class="bi bi-receipt"></i> Create Receipt
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <!-- Transaction Info -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Transaction Info</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>Code:</th>
+                        <td><strong>{{ transaction.transaction_code }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            {% if transaction.status == 'PENDING' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif transaction.status == 'IN_PROGRESS' %}
+                                <span class="badge bg-info">In Progress</span>
+                            {% elif transaction.status == 'COMPLETED' %}
+                                <span class="badge bg-success">Completed</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ transaction.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Brought In:</th>
+                        <td>{{ transaction.brought_in_date|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Initial Issue:</th>
+                        <td>{{ transaction.initial_issue_description|default:"N/A" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Gadget Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-phone"></i> Gadget</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <a href="{% url 'repair_shop:gadget_detail' transaction.gadget.id %}">
+                        <strong>{{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}</strong>
+                    </a>
+                </p>
+                <p class="text-muted small">
+                    <i class="bi bi-tag"></i> IMEI: {{ transaction.gadget.imei_number|default:"N/A" }}<br>
+                    <i class="bi bi-palette"></i> Color: {{ transaction.gadget.color|default:"N/A" }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Technician Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Technician</h5>
+            </div>
+            <div class="card-body">
+                {% if transaction.technician %}
+                <p><strong>{{ transaction.technician.get_full_name }}</strong></p>
+                <p class="text-muted small">@{{ transaction.technician.username }}</p>
+                {% else %}
+                <p class="text-muted">Not assigned</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person"></i> Customer</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <a href="{% url 'repair_shop:customer_detail' transaction.gadget.customer.id %}">
+                        {{ transaction.gadget.customer.first_name }} {{ transaction.gadget.customer.last_name }}
+                    </a>
+                </p>
+                <p class="text-muted small">
+                    <i class="bi bi-telephone"></i> {{ transaction.gadget.customer.phone_number|default:"N/A" }}<br>
+                    <i class="bi bi-envelope"></i> {{ transaction.gadget.customer.email|default:"N/A" }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repair Logs -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-list"></i> Repair Logs
+                    <span class="badge bg-primary float-end">{{ logs.count }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if logs %}
+                <div class="list-group">
+                    {% for log in logs %}
+                    <div class="list-group-item">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">
+                                    Log #{{ forloop.counter }}
+                                    <span class="badge bg-info">₵{{ log.repair_cost }}</span>
+                                </h6>
+                                <p class="mb-2"><strong>Issue:</strong> {{ log.issue_description }}</p>
+                                <p class="mb-2"><strong>Resolution:</strong> {{ log.resolution_description }}</p>
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-calendar"></i> {{ log.repair_date|date:"M d, Y" }}
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                {% if perms.repair_shop.change_gadgetrepairlog %}
+                                <a href="{% url 'repair_shop:update_repair_log' log.id %}" 
+                                   class="btn btn-sm btn-warning mb-2">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                                {% endif %}
+                                
+                                {% if user.is_superuser %}
+                                <a href="{% url 'repair_shop:delete_repair_log' log.id %}" 
+                                   class="btn btn-sm btn-danger mb-2"
+                                   onclick="return confirm('Are you sure?')">
+                                    <i class="bi bi-trash"></i> Delete
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Total Cost -->
+                <div class="card mt-4 border-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Repair Cost: <span class="float-end text-success">₵{{ total_cost }}</span></h5>
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i> No repair logs yet.
+                    {% if perms.repair_shop.add_gadgetrepairlog and transaction.status != 'COMPLETED' %}
+                    <a href="{% url 'repair_shop:add_repair_log' transaction.id %}" class="alert-link">Add the first log.</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

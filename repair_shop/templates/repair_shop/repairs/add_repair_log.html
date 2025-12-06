@@ -1,0 +1,133 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}{% if log %}Edit{% else %}Add{% endif %} Repair Log - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-pencil-square"></i> {% if log %}Edit{% else %}Add New{% endif %} Repair Log</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Repair Details - {{ transaction.transaction_code }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Transaction Info (Read-only) -->
+                    <div class="bg-light p-3 mb-4 rounded">
+                        <h6 class="mb-2"><i class="bi bi-info-circle"></i> Transaction Information</h6>
+                        <p class="mb-1"><strong>Gadget:</strong> {{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}</p>
+                        <p class="mb-1"><strong>Customer:</strong> {{ transaction.gadget.customer.first_name }} {{ transaction.gadget.customer.last_name }}</p>
+                        <p class="mb-0"><strong>Technician:</strong> {{ transaction.technician.get_full_name }}</p>
+                    </div>
+
+                    <div class="row">
+                        <!-- Repair Date -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.repair_date.id_for_label }}" class="form-label">
+                                <i class="bi bi-calendar"></i> Repair Date
+                            </label>
+                            {{ form.repair_date }}
+                            <small class="form-text text-muted">{% if log %}Auto-filled{% else %}Automatically set to today{% endif %}</small>
+                            {% if form.repair_date.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.repair_date.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Repair Cost -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.repair_cost.id_for_label }}" class="form-label">
+                                <i class="bi bi-currency-dollar"></i> Repair Cost (₵) *
+                            </label>
+                            {{ form.repair_cost }}
+                            {% if form.repair_cost.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.repair_cost.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Issue Description -->
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.issue_description.id_for_label }}" class="form-label">
+                                <i class="bi bi-exclamation-circle"></i> Issue Description *
+                            </label>
+                            {{ form.issue_description }}
+                            {% if form.issue_description.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.issue_description.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Resolution Description -->
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.resolution_description.id_for_label }}" class="form-label">
+                                <i class="bi bi-check-circle"></i> Resolution Description *
+                            </label>
+                            {{ form.resolution_description }}
+                            {% if form.resolution_description.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.resolution_description.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading">Form Errors</h5>
+                        {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> {% if log %}Update{% else %}Add{% endif %} Log
+                        </button>
+                        <a href="{% url 'repair_shop:repair_transaction_detail' transaction.id %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Log Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <h6>What to include:</h6>
+                <ul class="small">
+                    <li><strong>Issue:</strong> Detailed description of the problem</li>
+                    <li><strong>Solution:</strong> What was done to fix it</li>
+                    <li><strong>Cost:</strong> Labor and parts cost</li>
+                </ul>
+                <hr>
+                <p class="text-muted small mb-0"><i class="bi bi-lightbulb"></i> You can add multiple logs per transaction to track progress.</p>
+            </div>
+        </div>
+
+        {% if log %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock"></i> Log History</h5>
+            </div>
+            <div class="card-body">
+                <p class="small"><strong>Created:</strong> {{ log.created_at|date:"M d, Y H:i" }}</p>
+                <p class="small mb-0"><strong>Last Updated:</strong> {{ log.updated_at|date:"M d, Y H:i" }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+

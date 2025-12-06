@@ -1,0 +1,181 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}{{ gadget.gadget_brand }} {{ gadget.gadget_model }} - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-phone"></i> {{ gadget.gadget_brand }} {{ gadget.gadget_model }}</h1>
+    {% if perms.repair_shop.change_gadget %}
+    <a href="{% url 'repair_shop:update_gadget' gadget.id %}" class="btn btn-warning">
+        <i class="bi bi-pencil"></i> Edit
+    </a>
+    {% endif %}
+</div>
+
+<div class="row">
+    <!-- Gadget Information -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Device Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>Type:</th>
+                        <td><span class="badge bg-info">{{ gadget.get_gadget_type_display }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Brand:</th>
+                        <td>{{ gadget.gadget_brand }}</td>
+                    </tr>
+                    <tr>
+                        <th>Model:</th>
+                        <td>{{ gadget.gadget_model }}</td>
+                    </tr>
+                    <tr>
+                        <th>IMEI:</th>
+                        <td>{{ gadget.imei_number|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Color:</th>
+                        <td>{{ gadget.color|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Storage:</th>
+                        <td>{{ gadget.storage_capacity|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <th>RAM:</th>
+                        <td>{{ gadget.ram|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Registered:</th>
+                        <td>{{ gadget.created_at|date:"M d, Y" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Customer Info -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person"></i> Customer</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <a href="{% url 'repair_shop:customer_detail' gadget.customer.id %}">
+                        {{ gadget.customer.first_name }} {{ gadget.customer.last_name }}
+                    </a>
+                </p>
+                <p class="text-muted small">
+                    <i class="bi bi-telephone"></i> {{ gadget.customer.phone_number|default:"N/A" }}<br>
+                    <i class="bi bi-envelope"></i> {{ gadget.customer.email|default:"N/A" }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repair History -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-wrench"></i> Repair Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h3 class="text-primary">{{ total_repairs }}</h3>
+                        <p class="text-muted">Total Repairs</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-warning">{{ pending_repairs }}</h3>
+                        <p class="text-muted">Pending</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-info">{{ inprogress_repairs }}</h3>
+                        <p class="text-muted">In Progress</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-success">{{ completed_repairs }}</h3>
+                        <p class="text-muted">Completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Repair Transactions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list"></i> Repair History</h5>
+            </div>
+            <div class="card-body">
+                {% if repair_history %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Transaction Code</th>
+                                <th>Technician</th>
+                                <th>Status</th>
+                                <th>Brought In</th>
+                                <th>Logs</th>
+                                <th>Cost</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for repair in repair_history %}
+                            <tr>
+                                <td><strong>{{ repair.transaction_code }}</strong></td>
+                                <td>{{ repair.technician.username|default:"Unassigned" }}</td>
+                                <td>
+                                    {% if repair.status == 'PENDING' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif repair.status == 'IN_PROGRESS' %}
+                                        <span class="badge bg-info">In Progress</span>
+                                    {% elif repair.status == 'COMPLETED' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ repair.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ repair.brought_in_date|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ repair.repair_logs.count }}</span>
+                                </td>
+                                <td>₵{{ repair.total_cost }}</td>
+                                <td>
+                                    <a href="{% url 'repair_shop:repair_transaction_detail' repair.id %}" 
+                                       class="btn btn-sm btn-info" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle"></i> No repair history for this gadget.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Description -->
+        {% if gadget.description %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-file-text"></i> Notes</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ gadget.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}Receipt {{ receipt.receipt_number }} - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-receipt"></i> Receipt {{ receipt.receipt_number }}</h1>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn btn-info" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print
+        </button>
+        <a href="{% url 'repair_shop:receipt_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        <div class="card" id="receipt-content">
+            <!-- Receipt Header -->
+            <div class="card-body border-bottom">
+                <div class="text-center mb-4">
+                    <h2><i class="bi bi-tools"></i> Tech CRM</h2>
+                    <p class="text-muted">Gadget Repair Service</p>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6>Receipt Information</h6>
+                        <p class="mb-1"><strong>Receipt #:</strong> {{ receipt.receipt_number }}</p>
+                        <p class="mb-1"><strong>Issued:</strong> {{ receipt.issued_date|date:"M d, Y H:i" }}</p>
+                        <p class="mb-0"><strong>Amount:</strong> <span class="h5 text-success">₵{{ receipt.amount_paid }}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Transaction Information</h6>
+                        <p class="mb-1"><strong>Trans. Code:</strong> {{ transaction.transaction_code }}</p>
+                        <p class="mb-1"><strong>Brought In:</strong> {{ transaction.brought_in_date|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gadget Info -->
+            <div class="card-body border-bottom">
+                <h6 class="mb-3"><i class="bi bi-phone"></i> Device Information</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Device:</strong> {{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}</p>
+                        <p class="mb-0"><strong>Type:</strong> {{ transaction.gadget.get_gadget_type_display }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>IMEI:</strong> {{ transaction.gadget.imei_number|default:"N/A" }}</p>
+                        <p class="mb-0"><strong>Color:</strong> {{ transaction.gadget.color|default:"N/A" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div class="card-body border-bottom">
+                <h6 class="mb-3"><i class="bi bi-person"></i> Customer Information</h6>
+                <p class="mb-1"><strong>Name:</strong> {{ transaction.gadget.customer.first_name }} {{ transaction.gadget.customer.last_name }}</p>
+                <p class="mb-1"><strong>Phone:</strong> {{ transaction.gadget.customer.phone_number|default:"N/A" }}</p>
+                <p class="mb-0"><strong>Email:</strong> {{ transaction.gadget.customer.email|default:"N/A" }}</p>
+            </div>
+
+            <!-- Technician Info -->
+            <div class="card-body border-bottom">
+                <h6 class="mb-3"><i class="bi bi-person-badge"></i> Technician Information</h6>
+                <p class="mb-0"><strong>Technician:</strong> {{ transaction.technician.get_full_name }}</p>
+            </div>
+
+            <!-- Repair Details -->
+            <div class="card-body border-bottom">
+                <h6 class="mb-3"><i class="bi bi-wrench"></i> Repair Details</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Item</th>
+                                <th>Issue</th>
+                                <th>Resolution</th>
+                                <th class="text-end">Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in transaction.repair_logs.all %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><small>{{ log.issue_description|truncatewords:10 }}</small></td>
+                                <td><small>{{ log.resolution_description|truncatewords:10 }}</small></td>
+                                <td class="text-end">₵{{ log.repair_cost }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- Invoice Terms -->
+                        <div class="bg-light p-3 rounded">
+                            <h6>Thank You!</h6>
+                            <p class="text-muted small mb-0">Your device has been successfully repaired. We appreciate your business!</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <!-- Total -->
+                        <div class="border-top pt-3">
+                            <p class="mb-1">
+                                <strong>Subtotal:</strong> ₵{{ receipt.amount_paid }}
+                            </p>
+                            <p class="mb-0">
+                                <strong class="h5">Amount Paid: <span class="text-success">₵{{ receipt.amount_paid }}</span></strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Styles -->
+<style media="print">
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    .page-header, .btn-group, .btn {
+        display: none !important;
+    }
+    #receipt-content {
+        box-shadow: none !important;
+        border: none !important;
+    }
+    .card {
+        page-break-inside: avoid;
+    }
+</style>
+{% endblock %}
+
+

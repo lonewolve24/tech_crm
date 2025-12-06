@@ -1,0 +1,53 @@
+User:
+first_name
+last_name
+email
+is_admin = models.BooleanField(default=False)
+is_staff = models.BooleanField(default=False)
+is_editor = models.BooleanField(default=False)
+is_technician = models.BooleanField(default=False)
+
+
+Client:
+first_name
+last_name
+Phone_number
+email(optional)
+id_number
+id_type(choice(id_card, passport, driver_license, other))
+Gadget_detail(fk manay to many)
+
+Gadget:
+	Gadget_name
+	cretaed_at
+
+GadgetDetail:
+	Gadget(fk)
+	gadget_type(smart_phone,laptop,tablet,other)
+	model_type
+	gadget_os (Andriod, IOS)
+	imei_number
+
+
+GadegtRepairWorkinglog:
+	Gadget_detail(fx)onetomany
+	Technician(fk, user)
+	Gadegt_diagnosis
+	docs_on_fix_process
+	status(assigned_to_be_fixed,fix_is_done)
+	duration_of_completion
+	status_of_repair(Started,Done)
+	price_od_repair(int,float)
+
+class RepairTransaction:
+    client = models.ForeignKey(ClientName)
+    gadget_detail = models.ForeignKey(Gadget_detail)
+    brought_in_date = models.DateTimeField()
+    assigned_technician = models.ForeignKey(User)
+    payment_status = models.CharField(choices=PAYMENT_STATUS)
+    transaction_id = models.CharField(unique=True)
+
+
+
+
+

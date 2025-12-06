@@ -1,0 +1,125 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}{% if transaction %}Edit{% else %}Create{% endif %} Repair Transaction - Tech CRM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-tools"></i> {% if transaction %}Edit{% else %}Create New{% endif %} Repair Transaction</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Repair Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Gadget Selection -->
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.gadget.id_for_label }}" class="form-label">
+                                <i class="bi bi-phone"></i> Select Gadget *
+                            </label>
+                            {{ form.gadget }}
+                            <small class="form-text text-muted">Choose the gadget that needs repair</small>
+                            {% if form.gadget.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.gadget.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Technician Assignment -->
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.technician.id_for_label }}" class="form-label">
+                                <i class="bi bi-person-badge"></i> Assign Technician *
+                            </label>
+                            {{ form.technician }}
+                            <small class="form-text text-muted">The technician responsible for this repair</small>
+                            {% if form.technician.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.technician.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">
+                                <i class="bi bi-bookmark"></i> Status
+                            </label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.status.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Brought In Date -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.brought_in_date.id_for_label }}" class="form-label">
+                                <i class="bi bi-calendar"></i> Brought In Date *
+                            </label>
+                            {{ form.brought_in_date }}
+                            {% if form.brought_in_date.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.brought_in_date.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Issue Description -->
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.initial_issue_description.id_for_label }}" class="form-label">
+                                <i class="bi bi-exclamation-circle"></i> Initial Issue Description
+                            </label>
+                            {{ form.initial_issue_description }}
+                            {% if form.initial_issue_description.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.initial_issue_description.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading">Form Errors</h5>
+                        {% for error in form.non_field_errors %}
+                        <p class="mb-0">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> {% if transaction %}Update{% else %}Create{% endif %} Transaction
+                        </button>
+                        <a href="{% url 'repair_shop:repair_transaction_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Box -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Transaction Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Transaction Code:</strong> Auto-generated when created</p>
+                <p><strong>Gadget:</strong> Required - select from registered gadgets</p>
+                <p><strong>Technician:</strong> Assign the technician who will handle the repair</p>
+                <p><strong>Status:</strong> Track repair progress through different statuses</p>
+                <hr>
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle"></i> Technicians can add repair logs after creation
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
