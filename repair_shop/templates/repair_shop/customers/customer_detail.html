@@ -1,226 +1,214 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}{{ customer.first_name }} {{ customer.last_name }} - Tech CRM{% endblock %}
+{% block title %}{{ customer.first_name }} {{ customer.last_name }} - Bayo Electronics{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>
-        <i class="bi bi-person-circle"></i> 
-        {{ customer.first_name }} {{ customer.last_name }}
-    </h1>
+
+<!-- ════════════════════════════════════════════
+     PAGE HEADER
+════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
     <div>
+        <h4 class="fw-bold mb-0 page-title">
+            <i class="bi bi-person-circle me-2"></i>{{ customer.first_name }} {{ customer.last_name }}
+        </h4>
+        <p class="text-muted small mb-0">Customer profile and device history</p>
+    </div>
+    <div class="d-flex gap-2">
         {% if perms.repair_shop.change_customer %}
-        <a href="{% url 'repair_shop:update_customer' customer.id %}" class="btn btn-warning">
-            <i class="bi bi-pencil"></i> Edit
+        <a href="{% url 'repair_shop:update_customer' customer.id %}" class="btn btn-brand-edit btn-sm px-3">
+            <i class="bi bi-pencil me-1"></i> Edit
         </a>
         {% endif %}
         {% if user.is_superuser %}
-        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-            <i class="bi bi-trash"></i> Delete
+        <button type="button" class="btn btn-brand-delete btn-sm px-3" data-bs-toggle="modal" data-bs-target="#deleteModal">
+            <i class="bi bi-trash me-1"></i> Delete
         </button>
         {% endif %}
     </div>
 </div>
 
-<div class="row">
+<div class="row g-4">
     <!-- Customer Information -->
     <div class="col-md-6">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Personal Information</h5>
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden h-100">
+            <div class="card-header-strip px-4 py-3">
+                <h5 class="mb-0 fw-semibold" style="font-size:.9rem;">
+                    <i class="bi bi-person-vcard me-2"></i>Personal Information
+                </h5>
             </div>
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-sm-4">
-                        <strong>Name:</strong>
-                    </div>
-                    <div class="col-sm-8">
-                        {{ customer.first_name }} {{ customer.last_name }}
-                    </div>
+            <div class="card-body p-4">
+                <div class="info-row mb-3">
+                    <span class="info-label">Full Name</span>
+                    <span class="info-value">{{ customer.first_name }} {{ customer.last_name }}</span>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-sm-4">
-                        <strong>Email:</strong>
-                    </div>
-                    <div class="col-sm-8">
+                <div class="info-row mb-3">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">
                         {% if customer.email %}
-                        <a href="mailto:{{ customer.email }}">{{ customer.email }}</a>
+                            <a href="mailto:{{ customer.email }}" class="link-brand">{{ customer.email }}</a>
                         {% else %}
-                        <span class="text-muted">N/A</span>
+                            <span class="text-muted">—</span>
                         {% endif %}
-                    </div>
+                    </span>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-sm-4">
-                        <strong>Phone:</strong>
-                    </div>
-                    <div class="col-sm-8">
+                <div class="info-row mb-3">
+                    <span class="info-label">Phone</span>
+                    <span class="info-value">
                         {% if customer.phone_number %}
-                        <a href="tel:{{ customer.phone_number }}">{{ customer.phone_number }}</a>
+                            <a href="tel:{{ customer.phone_number }}" class="link-brand">{{ customer.phone_number }}</a>
                         {% else %}
-                        <span class="text-muted">N/A</span>
+                            <span class="text-muted">—</span>
                         {% endif %}
-                    </div>
+                    </span>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-sm-4">
-                        <strong>Address:</strong>
-                    </div>
-                    <div class="col-sm-8">
-                        {{ customer.address|default:"N/A" }}
-                    </div>
+                <div class="info-row mb-3">
+                    <span class="info-label">Address</span>
+                    <span class="info-value">{{ customer.address|default:"—" }}</span>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-sm-4">
-                        <strong>ID Type:</strong>
-                    </div>
-                    <div class="col-sm-8">
-                        <span class="badge bg-info">{{ customer.get_id_type_display }}</span>
-                    </div>
+                <div class="info-row mb-3">
+                    <span class="info-label">ID Type</span>
+                    <span class="info-value">
+                        <span class="type-pill type-{{ customer.id_type|lower }}">{{ customer.get_id_type_display }}</span>
+                    </span>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-sm-4">
-                        <strong>ID Number:</strong>
-                    </div>
-                    <div class="col-sm-8">
-                        {{ customer.id_number|default:"N/A" }}
-                    </div>
+                <div class="info-row mb-3">
+                    <span class="info-label">ID Number</span>
+                    <span class="info-value font-monospace">{{ customer.id_number|default:"—" }}</span>
                 </div>
 
-                <hr>
-
-                <div class="row mb-3">
-                    <div class="col-sm-4">
-                        <strong>Member Since:</strong>
+                <div class="border-top pt-3 mt-3">
+                    <div class="info-row mb-2">
+                        <span class="info-label text-muted">Member Since</span>
+                        <span class="info-value text-muted" style="font-size:.8rem;">{{ customer.created_at|date:"F d, Y" }}</span>
                     </div>
-                    <div class="col-sm-8">
-                        {{ customer.created_at|date:"F d, Y" }}
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-sm-4">
-                        <strong>Last Updated:</strong>
-                    </div>
-                    <div class="col-sm-8">
-                        {{ customer.updated_at|date:"F d, Y H:i" }}
+                    <div class="info-row">
+                        <span class="info-label text-muted">Last Updated</span>
+                        <span class="info-value text-muted" style="font-size:.8rem;">{{ customer.updated_at|date:"F d, Y H:i" }}</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Customer Statistics -->
+    <!-- Statistics -->
     <div class="col-md-6">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Statistics</h5>
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden h-100">
+            <div class="card-header-strip px-4 py-3" style="background: #1a2340;">
+                <h5 class="mb-0 fw-semibold" style="font-size:.9rem;">
+                    <i class="bi bi-graph-up me-2"></i>Statistics
+                </h5>
             </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-6">
-                        <div class="stat-card pending">
-                            <h3 class="stat-value">{{ customer_gadgets|length }}</h3>
-                            <p class="stat-label">Gadgets Registered</p>
+            <div class="card-body p-4">
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <div class="stat-box stat-box-primary">
+                            <div class="stat-box-number">{{ customer_gadgets|length }}</div>
+                            <div class="stat-box-label">Gadgets</div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="stat-card in-progress">
-                            <h3 class="stat-value">{{ total_repairs }}</h3>
-                            <p class="stat-label">Total Repairs</p>
+                    <div class="col-6">
+                        <div class="stat-box stat-box-success">
+                            <div class="stat-box-number">{{ total_repairs }}</div>
+                            <div class="stat-box-label">Total Repairs</div>
                         </div>
                     </div>
                 </div>
 
-                <hr>
-
-                <h6 class="mb-3">Status Summary</h6>
-                <ul class="list-unstyled">
-                    <li class="mb-2">
-                        <span class="badge bg-warning">Pending:</span>
-                        <strong>{{ pending_repairs }}</strong>
-                    </li>
-                    <li class="mb-2">
-                        <span class="badge bg-info">In Progress:</span>
-                        <strong>{{ inprogress_repairs }}</strong>
-                    </li>
-                    <li>
-                        <span class="badge bg-success">Completed:</span>
-                        <strong>{{ completed_repairs }}</strong>
-                    </li>
-                </ul>
+                <h6 class="fw-semibold mb-3" style="font-size:.8rem; color: var(--brand);">Repair Status</h6>
+                <div class="status-list">
+                    <div class="status-item">
+                        <span class="status-dot" style="background: #f59e0b;"></span>
+                        <span class="status-label">Pending</span>
+                        <span class="status-count">{{ pending_repairs }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-dot" style="background: #0ea5e9;"></span>
+                        <span class="status-label">In Progress</span>
+                        <span class="status-count">{{ inprogress_repairs }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-dot" style="background: #22c55e;"></span>
+                        <span class="status-label">Completed</span>
+                        <span class="status-count">{{ completed_repairs }}</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Gadgets Section -->
-<div class="card">
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-phone"></i> Gadgets</h5>
+<div class="card border-0 shadow-sm rounded-3 overflow-hidden mt-4">
+    <div class="card-header-strip d-flex align-items-center justify-content-between px-4 py-3">
+        <h5 class="mb-0 fw-semibold" style="font-size:.9rem;">
+            <i class="bi bi-phone me-2"></i>Registered Gadgets
+        </h5>
             {% if perms.repair_shop.add_gadget %}
-            <a href="{% url 'repair_shop:create_gadget' %}" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus-circle"></i> Register Gadget
+        <a href="{% url 'repair_shop:create_gadget' %}?customer={{ customer.id }}" class="btn btn-sm btn-light px-3">
+            <i class="bi bi-plus-lg me-1"></i> Register Gadget
             </a>
             {% endif %}
-        </div>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         {% if customer_gadgets %}
         <div class="table-responsive">
-            <table class="table table-sm table-hover">
-                <thead class="table-light">
+            <table class="table rtable mb-0">
+                <thead>
                     <tr>
-                        <th>Brand</th>
-                        <th>Model</th>
                         <th>Type</th>
+                        <th>Brand & Model</th>
                         <th>IMEI</th>
                         <th>Repairs</th>
-                        <th>Actions</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for gadget in customer_gadgets %}
                     <tr>
-                        <td><strong>{{ gadget.gadget_brand }}</strong></td>
-                        <td>{{ gadget.gadget_model }}</td>
-                        <td><span class="badge bg-secondary">{{ gadget.get_gadget_type_display }}</span></td>
-                        <td><small>{{ gadget.imei_number|default:"N/A" }}</small></td>
                         <td>
-                            <span class="badge bg-info">
-                                {{ gadget.gadgetrepairtransaction_set.count }}
+                            <span class="type-pill type-{{ gadget.gadget_type|lower }}">
+                                {{ gadget.get_gadget_type_display }}
                             </span>
                         </td>
                         <td>
-                            <a href="{% url 'repair_shop:gadget_detail' gadget.id %}" class="btn btn-sm btn-info" title="View Details">
+                            <div class="fw-medium" style="font-size:.875rem;">{{ gadget.gadget_brand }}</div>
+                            <div class="text-muted" style="font-size:.75rem;">{{ gadget.gadget_model }}</div>
+                        </td>
+                        <td style="font-size:.8rem;">
+                            <span class="font-monospace text-muted">{{ gadget.imei_number|default:"—" }}</span>
+                        </td>
+                        <td>
+                            <span class="repair-badge">{{ gadget.gadgetrepairtransaction_set.count }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a href="{% url 'repair_shop:gadget_detail' gadget.id %}" class="act-btn act-btn-view" title="View">
                                 <i class="bi bi-eye"></i>
                             </a>
                             {% if perms.repair_shop.change_gadget %}
-                            <a href="{% url 'repair_shop:update_gadget' gadget.id %}" class="btn btn-sm btn-warning" title="Edit">
+                                <a href="{% url 'repair_shop:update_gadget' gadget.id %}" class="act-btn act-btn-edit" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             {% endif %}
-                            
-                            <!-- Add to Repair Button (only if no active repair) -->
                             {% if perms.repair_shop.add_gadgetrepairtransaction %}
                                 {% if gadget.has_active_repair %}
-                                <button class="btn btn-sm btn-secondary" disabled title="Gadget has active repair">
+                                    <button class="act-btn act-btn-disabled" disabled title="Active repair exists">
                                     <i class="bi bi-wrench"></i>
                                 </button>
                                 {% else %}
-                                <a href="{% url 'repair_shop:create_repair_transaction' %}?gadget={{ gadget.id }}" 
-                                   class="btn btn-sm btn-success" title="Create Repair">
+                                    <a href="{% url 'repair_shop:create_repair_transaction' %}?gadget={{ gadget.id }}" class="act-btn act-btn-repair" title="Create Repair">
                                     <i class="bi bi-wrench"></i>
                                 </a>
                                 {% endif %}
                             {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -228,10 +216,16 @@
             </table>
         </div>
         {% else %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> No gadgets registered yet.
+        <div class="text-center py-5">
+            <div class="empty-state-icon mb-3">
+                <i class="bi bi-phone"></i>
+            </div>
+            <h6 class="fw-semibold mb-1">No gadgets registered</h6>
+            <p class="text-muted small mb-3">This customer has no devices registered yet.</p>
             {% if perms.repair_shop.add_gadget %}
-            <a href="{% url 'repair_shop:create_gadget' %}" class="alert-link">Register one now</a>
+            <a href="{% url 'repair_shop:create_gadget' %}?customer={{ customer.id }}" class="btn btn-brand-create btn-sm px-4">
+                <i class="bi bi-plus-lg me-1"></i> Register Gadget
+            </a>
             {% endif %}
         </div>
         {% endif %}
@@ -240,33 +234,240 @@
 
 <!-- Back Button -->
 <div class="mt-4">
-    <a href="{% url 'repair_shop:customer_list' %}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Back to Customers
+    <a href="{% url 'repair_shop:customer_list' %}" class="btn btn-outline-secondary btn-sm px-3">
+        <i class="bi bi-arrow-left me-1"></i> Back to Customers
     </a>
 </div>
 
-<!-- Delete Confirmation Modal -->
+<!-- Delete Modal -->
 {% if user.is_superuser %}
 <div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header border-0">
                 <h5 class="modal-title">Delete Customer</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <strong>{{ customer.first_name }} {{ customer.last_name }}</strong>?</p>
-                <p class="text-danger"><small>This action cannot be undone and all associated gadgets will be deleted.</small></p>
+            <div class="modal-body text-center">
+                <i class="bi bi-exclamation-triangle-fill text-warning fs-1 mb-3 d-block"></i>
+                <p>Delete <strong>{{ customer.first_name }} {{ customer.last_name }}</strong>?</p>
+                <p class="text-danger small">All associated gadgets and repairs will also be deleted.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="{% url 'repair_shop:delete_customer' customer.id %}" class="btn btn-danger">
-                    Delete
-                </a>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <a href="{% url 'repair_shop:delete_customer' customer.id %}" class="btn btn-danger btn-sm">Delete</a>
             </div>
         </div>
     </div>
 </div>
 {% endif %}
-{% endblock %}
 
+<!-- ════════════════════════════════════════════
+     SCOPED STYLES
+════════════════════════════════════════════ -->
+<style>
+:root {
+    --brand: #0D1226;
+    --brand-lt: #1a2340;
+    --brand-tx: #FEFBFC;
+    --accent: #4F6AF5;
+}
+
+.page-title { color: var(--brand); letter-spacing: -.3px; }
+
+/* Card header strip */
+.card-header-strip {
+    background: var(--brand);
+    color: var(--brand-tx);
+}
+
+/* Edit/Delete buttons */
+.btn-brand-edit {
+    background: #f59e0b;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 500;
+    transition: all .15s;
+}
+.btn-brand-edit:hover { background: #d97706; color: #fff; transform: translateY(-1px); }
+
+.btn-brand-delete {
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 500;
+    transition: all .15s;
+}
+.btn-brand-delete:hover { background: #dc2626; color: #fff; transform: translateY(-1px); }
+
+.btn-brand-create {
+    background: #0f766e;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 500;
+    transition: all .15s;
+}
+.btn-brand-create:hover { background: #115e59; color: #fff; transform: translateY(-1px); }
+
+/* Info rows */
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .5rem 0;
+}
+.info-label {
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #6b7280;
+}
+.info-value {
+    font-size: .875rem;
+    color: #111827;
+    font-weight: 500;
+}
+
+/* Link brand */
+.link-brand { color: var(--accent); text-decoration: none; }
+.link-brand:hover { color: #2d4acf; text-decoration: underline; }
+
+/* Type pills */
+.type-pill {
+    display: inline-block;
+    padding: .22em .75em;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.type-dl { background: #dbeafe; color: #1e40af; }
+.type-pp { background: #dcfce7; color: #166534; }
+.type-ni { background: #fef3c7; color: #92400e; }
+.type-vc { background: #fce7f3; color: #9d174d; }
+.type-other { background: #f3f4f6; color: #374151; }
+.type-sp { background: #dbeafe; color: #1e40af; }
+.type-lt { background: #dcfce7; color: #166534; }
+.type-dt { background: #fef3c7; color: #92400e; }
+.type-tb { background: #fce7f3; color: #9d174d; }
+.type-ot { background: #f3f4f6; color: #374151; }
+
+/* Stat boxes */
+.stat-box {
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+}
+.stat-box-primary { background: #f8f9ff; border: 1.5px solid #e2e6f0; }
+.stat-box-success { background: #ecfdf5; border: 1.5px solid #d1fae5; }
+.stat-box-number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--brand);
+    line-height: 1;
+}
+.stat-box-success .stat-box-number { color: #059669; }
+.stat-box-label {
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #6b7280;
+    margin-top: .25rem;
+}
+
+/* Status list */
+.status-list { display: flex; flex-direction: column; gap: .5rem; }
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .5rem .75rem;
+    background: #f8f9fb;
+    border-radius: 8px;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-label { font-size: .8rem; color: #374151; flex: 1; }
+.status-count {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--brand);
+    background: #fff;
+    padding: .15rem .5rem;
+    border-radius: 12px;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* Table */
+.rtable thead th {
+    background: #f8f9fb;
+    border-bottom: 2px solid #e2e6f0;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6b7280;
+    padding: .65rem 1rem;
+    white-space: nowrap;
+}
+.rtable tbody td { padding: .7rem 1rem; vertical-align: middle; border-color: #f1f3f9; }
+.rtable tbody tr { transition: background .1s; }
+.rtable tbody tr:hover { background: #f8f9ff; }
+
+/* Repair badge */
+.repair-badge {
+    display: inline-block;
+    background: #f1f3f9;
+    color: var(--brand);
+    border: 1px solid #e2e6f0;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+/* Action buttons */
+.act-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    font-size: .82rem;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .13s;
+    background: transparent;
+}
+.act-btn-view     { border-color:#0ea5e9; color:#0ea5e9; }
+.act-btn-view:hover { background:#0ea5e9; color:#fff; }
+.act-btn-edit     { border-color:#f59e0b; color:#f59e0b; }
+.act-btn-edit:hover { background:#f59e0b; color:#fff; }
+.act-btn-repair   { border-color:#22c55e; color:#22c55e; }
+.act-btn-repair:hover { background:#22c55e; color:#fff; }
+.act-btn-disabled { border-color:#d1d5db; color:#d1d5db; cursor:not-allowed; }
+
+/* Empty state */
+.empty-state-icon {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: #f1f3f9;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: #9ca3af;
+}
+</style>
+
+{% endblock %}

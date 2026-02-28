@@ -11,6 +11,8 @@ This application uses Django Groups and Permissions to control user access. Ther
 
 ---
 
+
+
 ## Setup Instructions
 
 ### 1. Run Management Command to Create Groups
@@ -261,6 +263,7 @@ Go to `/admin/` with superuser account to:
 ## Quick Reference: Permission Codes
 
 ```
+
 repair_shop.add_customer
 repair_shop.change_customer
 repair_shop.delete_customer

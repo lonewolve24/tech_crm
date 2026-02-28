@@ -1,156 +1,406 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}Gadgets - Tech CRM{% endblock %}
+{% block title %}Gadgets - Bayo Electronics{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1><i class="bi bi-phone"></i> Gadgets</h1>
+
+<!-- ════════════════════════════════════════════
+     PAGE HEADER
+════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-0 page-title">Gadgets</h4>
+        <p class="text-muted small mb-0">Device inventory and repair history</p>
+    </div>
     {% if perms.repair_shop.add_gadget %}
-    <a href="{% url 'repair_shop:create_gadget' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Register New Gadget
+    <a href="{% url 'repair_shop:create_gadget' %}" class="btn btn-brand-create btn-sm px-3">
+        <i class="bi bi-plus-lg me-1"></i> Register Gadget
     </a>
     {% endif %}
 </div>
 
-<!-- Search Bar -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-6">
-                <input type="text" name="search" class="form-control" placeholder="Search by brand, model, IMEI, or customer..." 
-                    value="{{ request.GET.search }}">
+<!-- ════════════════════════════════════════════
+     DARK FILTER BAR
+════════════════════════════════════════════ -->
+<form method="get" id="gadgetFilterForm">
+<div class="dark-filter-bar mb-3">
+    <div class="dark-filter-inner">
+
+        <span class="dark-filter-label">
+            <i class="bi bi-funnel-fill me-1"></i>Filters:
+        </span>
+
+        <!-- Search -->
+        <div class="dark-filter-field dark-filter-field-wide">
+            <input type="text" name="search" class="dark-filter-input" placeholder="Search brand, model, IMEI, serial, customer..." value="{{ request.GET.search }}">
+        </div>
+
+        <!-- Gadget Type -->
+        <div class="dark-filter-field">
+            <select name="gadget_type" class="dark-filter-select">
+                <option value="">All Types</option>
+                <option value="SP" {% if request.GET.gadget_type == 'SP' %}selected{% endif %}>Smartphone</option>
+                <option value="LT" {% if request.GET.gadget_type == 'LT' %}selected{% endif %}>Laptop</option>
+                <option value="DT" {% if request.GET.gadget_type == 'DT' %}selected{% endif %}>Desktop</option>
+                <option value="TB" {% if request.GET.gadget_type == 'TB' %}selected{% endif %}>Tablet</option>
+                <option value="OT" {% if request.GET.gadget_type == 'OT' %}selected{% endif %}>Other</option>
+            </select>
             </div>
-            <div class="col-md-6">
-                <button type="submit" class="btn btn-info">
-                    <i class="bi bi-search"></i> Search
+
+        <!-- Go Button -->
+        <button type="submit" class="dark-filter-go">
+            Go
                 </button>
-                {% if request.GET.search %}
-                <a href="{% url 'repair_shop:gadget_list' %}" class="btn btn-secondary">
-                    <i class="bi bi-x-circle"></i> Clear
+
+        {% if request.GET.search or request.GET.gadget_type %}
+        <a href="{% url 'repair_shop:gadget_list' %}" class="btn btn-sm btn-outline-light ms-2">
+            <i class="bi bi-x-lg me-1"></i>Clear
                 </a>
                 {% endif %}
-            </div>
-        </form>
+
     </div>
 </div>
+</form>
 
-<!-- Gadgets Table -->
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="bi bi-table"></i> Gadget Inventory
-            {% if gadgets %}
-            <span class="badge bg-primary float-end">{{ gadgets.count }} gadgets</span>
-            {% endif %}
-        </h5>
+<!-- Quick action buttons row -->
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{% url 'repair_shop:gadget_list' %}" class="btn btn-outline-secondary btn-sm {% if not request.GET.search and not request.GET.gadget_type %}active{% endif %}">
+        <i class="bi bi-phone me-1"></i>All Gadgets
+    </a>
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportGadgets()">
+        <i class="bi bi-download me-1"></i>Export
+    </button>
+</div>
+
+<!-- ════════════════════════════════════════════
+     TABLE
+════════════════════════════════════════════ -->
+<div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+    <div class="card-header-strip d-flex align-items-center justify-content-between px-4 py-3">
+        <span class="fw-semibold" style="font-size:.9rem;">
+            <i class="bi bi-table me-1 opacity-75"></i> Gadget Inventory
+        </span>
+        <span class="badge rounded-pill" style="background:rgba(255,255,255,.15);font-size:.75rem;">
+            {% if gadgets %}{{ gadgets.count }}{% else %}0{% endif %} gadgets
+        </span>
     </div>
-    <div class="card-body">
+
         {% if gadgets %}
         <div class="table-responsive">
-            <table class="table table-hover table-striped">
-                <thead class="table-light">
+        <table class="table rtable mb-0" id="gadgetTable">
+            <thead>
                     <tr>
                         <th>Type</th>
                         <th>Brand & Model</th>
-                        <th>IMEI</th>
+                    <th>IMEI / Serial</th>
                         <th>Customer</th>
                         <th>Repairs</th>
                         <th>Registered</th>
-                        <th>Actions</th>
+                    <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for gadget in gadgets %}
                     <tr>
                         <td>
-                            <span class="badge bg-info">{{ gadget.get_gadget_type_display }}</span>
+                        <span class="type-pill type-{{ gadget.gadget_type|lower }}">
+                            {{ gadget.get_gadget_type_display }}
+                        </span>
                         </td>
                         <td>
-                            <strong>{{ gadget.gadget_brand }}</strong> {{ gadget.gadget_model }}
+                        <div class="fw-medium" style="font-size:.875rem;">{{ gadget.gadget_brand }}</div>
+                        <div class="text-muted" style="font-size:.75rem;">{{ gadget.gadget_model }}</div>
+                        </td>
+                    <td style="font-size:.8rem;">
+                        {% if gadget.imei_number %}
+                            <span class="font-monospace text-muted">{{ gadget.imei_number }}</span>
+                        {% elif gadget.serial_number %}
+                            <span class="font-monospace text-muted">SN: {{ gadget.serial_number }}</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
                         </td>
                         <td>
-                            <small class="text-muted">{{ gadget.imei_number|default:"N/A" }}</small>
-                        </td>
-                        <td>
-                            <a href="{% url 'repair_shop:customer_detail' gadget.customer.id %}">
+                        <a href="{% url 'repair_shop:customer_detail' gadget.customer.id %}" class="link-customer" style="font-size:.875rem;">
                                 {{ gadget.customer.first_name }} {{ gadget.customer.last_name }}
                             </a>
                         </td>
                         <td>
-                            <span class="badge bg-warning">
+                        <span class="repair-badge">
                                 {{ gadget.gadgetrepairtransaction_set.count }}
                             </span>
                         </td>
-                        <td>
+                    <td class="text-muted" style="font-size:.8rem; white-space:nowrap;">
                             {{ gadget.created_at|date:"M d, Y" }}
                         </td>
                         <td>
-                            <!-- View Button -->
+                        <div class="d-flex gap-1 justify-content-center">
                             <a href="{% url 'repair_shop:gadget_detail' gadget.id %}" 
-                               class="btn btn-sm btn-info" title="View Details">
+                               class="act-btn act-btn-view" title="View Details">
                                 <i class="bi bi-eye"></i>
                             </a>
-
-                            <!-- Edit Button -->
                             {% if perms.repair_shop.change_gadget %}
                             <a href="{% url 'repair_shop:update_gadget' gadget.id %}" 
-                               class="btn btn-sm btn-warning" title="Edit">
+                               class="act-btn act-btn-edit" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             {% endif %}
-
-                            <!-- Delete Button (Superuser Only) -->
                             {% if user.is_superuser %}
-                            <button type="button" class="btn btn-sm btn-danger" 
+                            <button type="button" class="act-btn act-btn-delete"
                                     data-bs-toggle="modal" data-bs-target="#deleteModal{{ gadget.id }}"
                                     title="Delete">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
 
                             <!-- Delete Modal -->
+                {% if user.is_superuser %}
                             <div class="modal fade" id="deleteModal{{ gadget.id }}" tabindex="-1">
-                                <div class="modal-dialog">
+                    <div class="modal-dialog modal-sm modal-dialog-centered">
                                     <div class="modal-content">
-                                        <div class="modal-header">
+                            <div class="modal-header border-0">
                                             <h5 class="modal-title">Delete Gadget</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
-                                        <div class="modal-body">
-                                            <p>Are you sure you want to delete <strong>{{ gadget.gadget_brand }} {{ gadget.gadget_model }}</strong>?</p>
-                                            <p class="text-danger"><small>This action cannot be undone.</small></p>
+                            <div class="modal-body text-center">
+                                <i class="bi bi-exclamation-triangle-fill text-warning fs-1 mb-3 d-block"></i>
+                                <p>Delete <strong>{{ gadget.gadget_brand }} {{ gadget.gadget_model }}</strong>?</p>
+                                <p class="text-danger small">This cannot be undone.</p>
                                         </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <div class="modal-footer border-0 justify-content-center">
+                                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
                                             <a href="{% url 'repair_shop:delete_gadget' gadget.id %}" 
-                                               class="btn btn-danger">
-                                                Delete
-                                            </a>
+                                   class="btn btn-danger btn-sm">Delete</a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             {% endif %}
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <div class="alert alert-info" role="alert">
-            <i class="bi bi-info-circle"></i>
-            <strong>No gadgets found.</strong>
-            {% if perms.repair_shop.add_gadget %}
-            <a href="{% url 'repair_shop:create_gadget' %}" class="alert-link">Register one now.</a>
-            {% endif %}
+    <div class="text-center py-5 px-3">
+        <div class="empty-state-icon mb-3">
+            <i class="bi bi-phone"></i>
         </div>
+        <h6 class="fw-semibold mb-1">No gadgets found</h6>
+        <p class="text-muted small mb-3">Try adjusting your search or register a new device.</p>
+        {% if perms.repair_shop.add_gadget %}
+        <a href="{% url 'repair_shop:create_gadget' %}" class="btn btn-brand-create btn-sm px-4">
+            <i class="bi bi-plus-lg me-1"></i> Register Gadget
+        </a>
         {% endif %}
     </div>
+    {% endif %}
 </div>
+
+<!-- ════════════════════════════════════════════
+     SCOPED STYLES
+════════════════════════════════════════════ -->
+<style>
+/* ── Variables ──────────────────────────────── */
+:root {
+    --brand: #0D1226;
+    --brand-lt: #1a2340;
+    --brand-tx: #FEFBFC;
+    --accent: #4F6AF5;
+}
+
+/* ── Page title ─────────────────────────────── */
+.page-title { color: var(--brand); letter-spacing: -.3px; }
+
+/* ── Create button (green) ───────────────────── */
+.btn-brand-create {
+    background: #0f766e;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 500;
+    transition: background .15s, transform .1s;
+}
+.btn-brand-create:hover { background: #115e59; color: #fff; transform: translateY(-1px); }
+
+/* ── DARK FILTER BAR ────────────────────────── */
+.dark-filter-bar {
+    background: var(--brand);
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(13,18,38,.25);
+}
+.dark-filter-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.dark-filter-label {
+    color: rgba(255,255,255,.7);
+    font-size: .8rem;
+    font-weight: 500;
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.dark-filter-field { position: relative; }
+.dark-filter-field-wide { flex: 1; min-width: 280px; max-width: 400px; }
+
+.dark-filter-input,
+.dark-filter-select {
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: .85rem;
+    color: #111827;
+    outline: none;
+    height: 38px;
+    width: 100%;
+}
+.dark-filter-input::placeholder { color: #9ca3af; }
+.dark-filter-input:focus,
+.dark-filter-select:focus { box-shadow: 0 0 0 2px rgba(79,106,245,.4); }
+.dark-filter-select { cursor: pointer; min-width: 120px; }
+
+.dark-filter-go {
+    background: #fff;
+    color: var(--brand);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    height: 38px;
+}
+.dark-filter-go:hover {
+    background: #f3f4f6;
+    transform: translateY(-1px);
+}
+
+/* ── Card header strip ──────────────────────── */
+.card-header-strip {
+    background: var(--brand);
+    color: var(--brand-tx);
+}
+
+/* ── Table ──────────────────────────────────── */
+.rtable thead th {
+    background: #f8f9fb;
+    border-bottom: 2px solid #e2e6f0;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6b7280;
+    padding: .65rem 1rem;
+    white-space: nowrap;
+}
+.rtable tbody td { padding: .7rem 1rem; vertical-align: middle; border-color: #f1f3f9; }
+.rtable tbody tr { transition: background .1s; }
+.rtable tbody tr:hover { background: #f8f9ff; }
+
+/* Type pills */
+.type-pill {
+    display: inline-block;
+    padding: .22em .75em;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.type-sp { background: #dbeafe; color: #1e40af; }
+.type-lt { background: #dcfce7; color: #166534; }
+.type-dt { background: #fef3c7; color: #92400e; }
+.type-tb { background: #fce7f3; color: #9d174d; }
+.type-ot { background: #f3f4f6; color: #374151; }
+
+/* Repair badge */
+.repair-badge {
+    display: inline-block;
+    background: #f1f3f9;
+    color: var(--brand);
+    border: 1px solid #e2e6f0;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+/* Customer link */
+.link-customer { color: var(--accent); text-decoration: none; }
+.link-customer:hover { color: #2d4acf; text-decoration: underline; }
+
+/* Action buttons */
+.act-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    font-size: .82rem;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .13s;
+    background: transparent;
+}
+.act-btn-view     { border-color:#0ea5e9; color:#0ea5e9; }
+.act-btn-view:hover { background:#0ea5e9; color:#fff; }
+.act-btn-edit     { border-color:#f59e0b; color:#f59e0b; }
+.act-btn-edit:hover { background:#f59e0b; color:#fff; }
+.act-btn-delete   { border-color:#ef4444; color:#ef4444; }
+.act-btn-delete:hover { background:#ef4444; color:#fff; }
+
+/* Empty state */
+.empty-state-icon {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: #f1f3f9;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: #9ca3af;
+}
+</style>
+
+<!-- JavaScript for export -->
+<script>
+function exportGadgets() {
+    const table = document.getElementById('gadgetTable');
+    if (!table) return;
+
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        const cols = row.querySelectorAll('td, th');
+        const rowData = [];
+        cols.forEach(col => {
+            rowData.push('"' + col.innerText.replace(/"/g, '""') + '"');
+        });
+        csv.push(rowData.join(','));
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + csv.join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'gadgets_' + new Date().toISOString().split('T')[0] + '.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+
 {% endblock %}
-
-
-
-
-

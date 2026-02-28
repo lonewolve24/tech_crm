@@ -20,43 +20,26 @@ class CreatedModel(models.Model):
 
 class MyUserManager(BaseUserManager):
 
-
-    def create_user(self, email, username, password=None):
-
-        if not email:
-            raise ValueError('Users must have an email address')
+    def create_user(self, username, password=None, **extra_fields):
         if not username:
             raise ValueError('Users must have a username')
-        user = self.model(
-            email=self.normalize_email(email),
-            username=username,
-        )
+        user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, username, password=None, first_name='', last_name=''):
+    def create_superuser(self, username, password=None, **extra_fields):
+        extra_fields.setdefault('is_admin', True)
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(username, password, **extra_fields)
+    def create_technician(self, username, password=None, **extra_fields):
+        extra_fields['is_technician'] = True
+        return self.create_user(username, password, **extra_fields)
 
-        user = self.create_user(email, username, password=password)
-        user.first_name = first_name
-        user.last_name = last_name
-        user.is_admin = True
-        user.is_staff = True
-        user.is_superuser = True
-        user.save(using=self._db)
-        return user
-    def create_technician(self, email, username, password=None):
-
-        user = self.create_user(email, username, password=password)
-        user.is_technician = True
-        user.save(using=self._db)
-        return user
-
-    def create_secretary(self, email, username, password=None):
-        user = self.create_user(email, username, password=password)
-        user.is_secretary = True
-        user.save(using=self._db)
-        return user
+    def create_secretary(self, username, password=None, **extra_fields):
+        extra_fields['is_secretary'] = True
+        return self.create_user(username, password, **extra_fields)
 
    
 
@@ -72,19 +55,71 @@ class MyUser(AbstractBaseUser,CreatedModel):
     is_technician = models.BooleanField(default=False)
     is_secretary = models.BooleanField(default=False)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name']
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email', 'first_name']
 
     def __str__(self):
         return self.username
     
     objects = MyUserManager()
 
+    # Role-based permission sets
+    _TECHNICIAN_PERMS = {
+        'repair_shop.view_gadget',
+        'repair_shop.view_gadgetrepairtransaction',
+        'repair_shop.add_gadgetrepairlog',
+        'repair_shop.change_gadgetrepairlog',
+        'repair_shop.view_gadgetrepairlog',
+        'repair_shop.change_gadgetrepairtransaction',
+    }
+
+    _SECRETARY_PERMS = {
+        'repair_shop.view_customer', 'repair_shop.add_customer', 'repair_shop.change_customer',
+        'repair_shop.view_gadget', 'repair_shop.add_gadget', 'repair_shop.change_gadget',
+        'repair_shop.view_gadgetrepairtransaction', 'repair_shop.add_gadgetrepairtransaction',
+        # Secretary can VIEW logs (to understand what was done) but cannot ADD or EDIT them.
+        # Adding/editing repair logs is the technician's responsibility.
+        'repair_shop.view_gadgetrepairlog',
+        'repair_shop.add_gadgettransactionreceipt', 'repair_shop.view_gadgettransactionreceipt',
+        'repair_shop.add_payment', 'repair_shop.view_payment',
+        'repair_shop.view_notification',
+    }
+
+    _STAFF_PERMS = _SECRETARY_PERMS | {
+        'repair_shop.change_gadgetrepairtransaction',
+        'repair_shop.change_gadgetrepairlog',
+        'repair_shop.delete_customer',
+        'repair_shop.delete_gadget',
+        'repair_shop.delete_gadgetrepairlog',
+        'repair_shop.delete_gadgetrepairtransaction',
+        'repair_shop.view_gadgettransactionreceipt',
+        'repair_shop.change_gadgettransactionreceipt',
+        'repair_shop.change_payment', 'repair_shop.delete_payment',
+        'repair_shop.view_notification', 'repair_shop.change_notification',
+    }
+
     def has_perm(self, perm, obj=None):
-        return self.is_admin or self.is_superuser
+        if not self.is_active:
+            return False
+        if self.is_admin or self.is_superuser:
+            return True
+        # Role-based permission checking using user flag fields
+        if self.is_technician and perm in self._TECHNICIAN_PERMS:
+            return True
+        if self.is_secretary and perm in self._SECRETARY_PERMS:
+            return True
+        if self.is_staff and perm in self._STAFF_PERMS:
+            return True
+        return False
 
     def has_module_perms(self, app_label):
-        return self.is_admin or self.is_superuser
+        if not self.is_active:
+            return False
+        if self.is_admin or self.is_superuser:
+            return True
+        if app_label == 'repair_shop':
+            return self.is_technician or self.is_secretary or self.is_staff
+        return False
 
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -154,7 +189,8 @@ class Gadget(CreatedModel):
 
 
    def __str__(self):
-       return f"{self.gadget_brand} -- {self.gadget_model}"
+       customer_name = f"{self.customer.first_name} {self.customer.last_name}"
+       return f"{self.gadget_brand} {self.gadget_model} — {customer_name}"
    
    @property
    def has_active_repair(self):
@@ -216,6 +252,28 @@ class GadgetRepairTransaction(CreatedModel):
     @property
     def total_cost(self):
         return sum(log.repair_cost for log in self.repair_logs.all())
+
+    @property
+    def total_paid(self):
+        from django.db.models import Sum
+        result = self.payments.aggregate(total=Sum('amount'))
+        return result['total'] or 0
+
+    @property
+    def total_due(self):
+        return self.total_cost - self.total_paid
+
+    @property
+    def has_price(self):
+        """Returns True if at least one repair log (price quote) exists."""
+        return self.repair_logs.exists()
+
+    @property
+    def is_fully_paid(self):
+        """Returns True only if price has been set AND payment is complete."""
+        if not self.has_price:
+            return False  # Can't be "paid" if no price has been quoted yet
+        return self.total_due <= 0
     
 
     def save (self, *args , **kwargs):
@@ -250,6 +308,69 @@ class GadgetTransactionReceipt(models.Model):
 
     def __str__(self):
         return f"Receipt for {self.receipt_number}"
+
+
+class Payment(CreatedModel):
+    """Records individual payments (cash or mobile money) against a repair transaction."""
+    CASH = 'CASH'
+    MOBILE_MONEY = 'MOBILE_MONEY'
+    PAYMENT_TYPE_CHOICES = [
+        (CASH, 'Cash'),
+        (MOBILE_MONEY, 'Mobile Money'),
+    ]
+
+    transaction = models.ForeignKey(
+        'GadgetRepairTransaction', on_delete=models.CASCADE, related_name='payments'
+    )
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, default=CASH)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    mobile_provider = models.CharField(max_length=100, blank=True, default='',
+                                       help_text='e.g. Africell, QMoney (Mobile Money only)')
+    mobile_number = models.CharField(max_length=30, blank=True, default='',
+                                     help_text='Sender phone/account number')
+    notes = models.TextField(blank=True, default='')
+    recorded_by = models.ForeignKey(
+        'MyUser', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='recorded_payments'
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Payment D{self.amount} ({self.payment_type}) for {self.transaction.code}"
+
+
+class Notification(CreatedModel):
+    """In-app notifications for technicians (new assignment) and staff (repair completed)."""
+    REPAIR_COMPLETED = 'COMPLETED'
+    REPAIR_ASSIGNED = 'ASSIGNED'
+    PAYMENT_RECEIVED = 'PAYMENT'
+    PAYMENT_PENDING = 'PAY_PENDING'
+    TYPE_CHOICES = [
+        (REPAIR_COMPLETED, 'Repair Completed'),
+        (REPAIR_ASSIGNED, 'New Assignment'),
+        (PAYMENT_RECEIVED, 'Payment Received'),
+        (PAYMENT_PENDING, 'Payment Pending'),
+    ]
+
+    recipient = models.ForeignKey(
+        'MyUser', on_delete=models.CASCADE, related_name='notifications'
+    )
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    repair = models.ForeignKey(
+        'GadgetRepairTransaction', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='notifications'
+    )
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.notification_type}] → {self.recipient}: {self.title}"
 
 
 

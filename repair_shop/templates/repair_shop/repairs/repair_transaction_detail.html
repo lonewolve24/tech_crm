@@ -1,13 +1,14 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}{{ transaction.transaction_code }} - Tech CRM{% endblock %}
+{% block title %}{{ transaction.transaction_code }} - Bayo Electronics{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1><i class="bi bi-tools"></i> {{ transaction.transaction_code }}</h1>
     <div class="btn-group" role="group">
-        {% if perms.repair_shop.change_gadgetrepairtransaction %}
+        {# Staff/Superuser only: full edit and reassign #}
+        {% if user.is_superuser or user.is_staff %}
         <a href="{% url 'repair_shop:update_repair_transaction' transaction.id %}" class="btn btn-warning">
             <i class="bi bi-pencil"></i> Edit
         </a>
@@ -16,16 +17,44 @@
         </a>
         {% endif %}
 
-        {% if perms.repair_shop.add_gadgetrepairlog and transaction.status != 'COMPLETED' %}
-        <a href="{% url 'repair_shop:add_repair_log' transaction.id %}" class="btn btn-success">
-            <i class="bi bi-plus-circle"></i> Add Log
+        {# Technician: update status button (only for their own repairs) #}
+        {% if user.is_technician and transaction.technician == request.user and transaction.status != 'Completed' %}
+        <a href="{% url 'repair_shop:technician_update_status' transaction.id %}" class="btn btn-warning">
+            <i class="bi bi-arrow-repeat"></i> Update Status
         </a>
         {% endif %}
 
-        {% if perms.repair_shop.add_gadgettransactionreceipt and transaction.status == 'COMPLETED' %}
-        <a href="{% url 'repair_shop:create_transaction_receipt' transaction.id %}" class="btn btn-primary">
-            <i class="bi bi-receipt"></i> Create Receipt
+        {# Add log: technicians (own repairs, not completed) or staff/superuser #}
+        {% if transaction.status != 'Completed' %}
+            {% if user.is_superuser or user.is_staff %}
+            <a href="{% url 'repair_shop:add_repair_log' transaction.id %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Add Log
+            </a>
+            {% elif user.is_technician and transaction.technician == request.user %}
+        <a href="{% url 'repair_shop:add_repair_log' transaction.id %}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Add Log
         </a>
+            {% endif %}
+        {% endif %}
+
+        {# Payments & Receipt: only for completed repairs (staff/superuser/secretary) #}
+        {% if transaction.status == 'Completed' %}
+            {% if perms.repair_shop.add_payment and not is_fully_paid %}
+            <a href="{% url 'repair_shop:add_payment' transaction.id %}" class="btn btn-success">
+                <i class="bi bi-cash-coin"></i> Record Payment
+            </a>
+            {% endif %}
+            {% if perms.repair_shop.add_gadgettransactionreceipt and is_fully_paid %}
+                {% if transaction.gadgettransactionreceipt_set.exists %}
+                <a href="{% url 'repair_shop:receipt_detail' transaction.gadgettransactionreceipt_set.first.id %}" class="btn btn-primary">
+                    <i class="bi bi-receipt-cutoff"></i> View Receipt
+                </a>
+                {% else %}
+        <a href="{% url 'repair_shop:create_transaction_receipt' transaction.id %}" class="btn btn-primary">
+                    <i class="bi bi-receipt"></i> Generate Receipt
+        </a>
+                {% endif %}
+            {% endif %}
         {% endif %}
     </div>
 </div>
@@ -46,11 +75,11 @@
                     <tr>
                         <th>Status:</th>
                         <td>
-                            {% if transaction.status == 'PENDING' %}
-                                <span class="badge bg-warning">Pending</span>
-                            {% elif transaction.status == 'IN_PROGRESS' %}
+                            {% if transaction.status == 'Pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif transaction.status == 'In Progress' %}
                                 <span class="badge bg-info">In Progress</span>
-                            {% elif transaction.status == 'COMPLETED' %}
+                            {% elif transaction.status == 'Completed' %}
                                 <span class="badge bg-success">Completed</span>
                             {% else %}
                                 <span class="badge bg-secondary">{{ transaction.status }}</span>
@@ -139,7 +168,7 @@
                             <div class="col-md-8">
                                 <h6 class="mb-2">
                                     Log #{{ forloop.counter }}
-                                    <span class="badge bg-info">₵{{ log.repair_cost }}</span>
+                                    <span class="badge bg-info">D{{ log.repair_cost }}</span>
                                 </h6>
                                 <p class="mb-2"><strong>Issue:</strong> {{ log.issue_description }}</p>
                                 <p class="mb-2"><strong>Resolution:</strong> {{ log.resolution_description }}</p>
@@ -148,7 +177,13 @@
                                 </p>
                             </div>
                             <div class="col-md-4 text-end">
-                                {% if perms.repair_shop.change_gadgetrepairlog %}
+                                {# Technicians can edit logs on their own repairs; staff/superuser can edit any #}
+                                {% if user.is_superuser or user.is_staff %}
+                                <a href="{% url 'repair_shop:update_repair_log' log.id %}" 
+                                   class="btn btn-sm btn-warning mb-2">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </a>
+                                {% elif user.is_technician and transaction.technician == request.user and transaction.status != 'Completed' %}
                                 <a href="{% url 'repair_shop:update_repair_log' log.id %}" 
                                    class="btn btn-sm btn-warning mb-2">
                                     <i class="bi bi-pencil"></i> Edit
@@ -168,23 +203,122 @@
                     {% endfor %}
                 </div>
 
-                <!-- Total Cost -->
-                <div class="card mt-4 border-primary">
+                <!-- Cost & Payment Summary -->
+                <div class="card mt-4 border-0 shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title">Total Repair Cost: <span class="float-end text-success">₵{{ total_cost }}</span></h5>
+                        <div class="row g-2 text-center">
+                            <div class="col-4">
+                                <div class="p-2 bg-light rounded">
+                                    <div class="fw-bold text-dark">D{{ total_cost|floatformat:2 }}</div>
+                                    <div class="small text-muted">Total Cost</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 bg-success bg-opacity-10 rounded">
+                                    <div class="fw-bold text-success">D{{ total_paid|floatformat:2 }}</div>
+                                    <div class="small text-muted">Paid</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 {% if is_fully_paid %}bg-success bg-opacity-25{% else %}bg-danger bg-opacity-10{% endif %} rounded">
+                                    <div class="fw-bold {% if is_fully_paid %}text-success{% else %}text-danger{% endif %}">D{{ total_due|floatformat:2 }}</div>
+                                    <div class="small text-muted">{% if is_fully_paid %}✅ Paid Off{% else %}Outstanding{% endif %}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 {% else %}
                 <div class="alert alert-info" role="alert">
                     <i class="bi bi-info-circle"></i> No repair logs yet.
-                    {% if perms.repair_shop.add_gadgetrepairlog and transaction.status != 'COMPLETED' %}
+                    {% if transaction.status != 'Completed' %}
+                        {% if user.is_superuser or user.is_staff %}
+                        <a href="{% url 'repair_shop:add_repair_log' transaction.id %}" class="alert-link">Add the first log.</a>
+                        {% elif user.is_technician and transaction.technician == request.user %}
                     <a href="{% url 'repair_shop:add_repair_log' transaction.id %}" class="alert-link">Add the first log.</a>
+                        {% endif %}
                     {% endif %}
                 </div>
                 {% endif %}
             </div>
         </div>
+
+        <!-- ===== PAYMENTS PANEL ===== -->
+        {% if transaction.status == 'Completed' %}
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-wallet2"></i> Payment History
+                    {% if is_fully_paid %}
+                    <span class="badge bg-success ms-2">Fully Paid</span>
+                    {% else %}
+                    <span class="badge bg-danger ms-2">D{{ total_due|floatformat:2 }} Outstanding</span>
+                    {% endif %}
+                </h5>
+                {% if perms.repair_shop.add_payment and not is_fully_paid %}
+                <a href="{% url 'repair_shop:add_payment' transaction.id %}" class="btn btn-sm btn-success">
+                    <i class="bi bi-plus-circle"></i> Record Payment
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Method</th>
+                                <th>Amount</th>
+                                <th>Provider / No.</th>
+                                <th>Date</th>
+                                <th>By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% if payment.payment_type == 'CASH' %}
+                                    <span class="badge bg-secondary"><i class="bi bi-cash"></i> Cash</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark"><i class="bi bi-phone"></i> Mobile Money</span>
+                                    {% endif %}
+                                </td>
+                                <td><strong class="text-success">D{{ payment.amount|floatformat:2 }}</strong></td>
+                                <td>
+                                    {% if payment.mobile_provider %}{{ payment.mobile_provider }}{% endif %}
+                                    {% if payment.mobile_number %}<br><small class="text-muted">{{ payment.mobile_number }}</small>{% endif %}
+                                    {% if not payment.mobile_provider and not payment.mobile_number %}—{% endif %}
+                                </td>
+                                <td><small>{{ payment.created_at|date:"M d, Y H:i" }}</small></td>
+                                <td><small>{{ payment.recorded_by.username|default:"—" }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="2" class="text-end">Total Paid:</td>
+                                <td class="text-success">D{{ total_paid|floatformat:2 }}</td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-3 text-muted small">
+                    <i class="bi bi-info-circle"></i> No payments recorded yet.
+                    {% if perms.repair_shop.add_payment %}
+                    <a href="{% url 'repair_shop:add_payment' transaction.id %}" class="ms-1">Record first payment.</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+        </div>
     </div>
+        {% endif %}
+
+    </div><!-- /col-lg-8 -->
 </div>
 {% endblock %}
 

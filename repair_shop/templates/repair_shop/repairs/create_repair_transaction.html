@@ -1,7 +1,7 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}{% if transaction %}Edit{% else %}Create{% endif %} Repair Transaction - Tech CRM{% endblock %}
+{% block title %}{% if transaction %}Edit{% else %}Create{% endif %} Repair Transaction - Bayo Electronics{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -19,13 +19,33 @@
                     {% csrf_token %}
                     
                     <div class="row">
-                        <!-- Gadget Selection -->
+                        <!-- Customer Selection (Step 1) -->
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ form.customer.id_for_label }}" class="form-label">
+                                <i class="bi bi-person"></i> Select Customer
+                            </label>
+                            {{ form.customer }}
+                            <small class="form-text text-muted">
+                                Select a customer first to see their registered gadgets
+                            </small>
+                            {% if form.customer.errors %}
+                            <div class="alert alert-danger mt-2">{{ form.customer.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Gadget Selection (Step 2) -->
                         <div class="col-md-12 mb-3">
                             <label for="{{ form.gadget.id_for_label }}" class="form-label">
                                 <i class="bi bi-phone"></i> Select Gadget *
                             </label>
                             {{ form.gadget }}
-                            <small class="form-text text-muted">Choose the gadget that needs repair</small>
+                            <small class="form-text text-muted">
+                                {% if form.customer.value %}
+                                    Choose the gadget that needs repair
+                                {% else %}
+                                    <span class="text-warning">Please select a customer first</span>
+                                {% endif %}
+                            </small>
                             {% if form.gadget.errors %}
                             <div class="alert alert-danger mt-2">{{ form.gadget.errors }}</div>
                             {% endif %}
@@ -120,6 +140,32 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customerSelect = document.getElementById('id_customer_filter');
+    const gadgetSelect = document.getElementById('id_gadget');
+    
+    if (customerSelect) {
+        customerSelect.addEventListener('change', function() {
+            const customerId = this.value;
+            if (customerId) {
+                // Reload page with customer filter to get filtered gadgets
+                const url = new URL(window.location.href);
+                url.searchParams.set('customer', customerId);
+                url.searchParams.delete('gadget'); // Clear gadget if customer changes
+                window.location.href = url.toString();
+            } else {
+                // Clear customer filter
+                const url = new URL(window.location.href);
+                url.searchParams.delete('customer');
+                url.searchParams.delete('gadget');
+                window.location.href = url.toString();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
 
 

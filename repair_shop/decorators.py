@@ -33,7 +33,7 @@ def permission_required_or_superuser(perm):
             
             # User doesn't have permission
             messages.error(request, 'You do not have permission to access this page')
-            return redirect('home')
+            return redirect('repair_shop:home')
         
         return wrapper
     return decorator

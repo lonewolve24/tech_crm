@@ -1,0 +1,739 @@
+{% extends 'repair_shop/base.html' %}
+{% load static custom_filters %}
+
+{% block title %}Admin Dashboard - Bayo Electronics{% endblock %}
+
+{% block content %}
+
+<!-- ════════════════════════════════════════════
+     PAGE HEADER
+════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-0 page-title">Admin Dashboard</h4>
+        <p class="text-muted small mb-0">Complete overview of repairs, revenue and system status.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'repair_shop:create_repair_transaction' %}" class="btn btn-brand-create btn-sm px-3">
+            <i class="bi bi-plus-lg me-1"></i> New Repair
+        </a>
+        <a href="{% url 'repair_shop:repair_transaction_list' %}" class="btn btn-outline-secondary btn-sm px-3">
+            <i class="bi bi-list-ul me-1"></i> All Repairs
+        </a>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     DARK FILTER BAR (matching repair list)
+════════════════════════════════════════════ -->
+<form method="get" id="dashboardFilterForm">
+<div class="dark-filter-bar mb-4">
+    <div class="dark-filter-inner">
+
+        <span class="dark-filter-label">
+            <i class="bi bi-calendar3 me-1"></i>Filter by Month:
+        </span>
+
+        <!-- Prev arrow -->
+        <button type="button" class="dark-filter-arrow" onclick="adjustDashboardDate(-1)" title="Previous month">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+
+        <!-- Month Select -->
+        <div class="dark-filter-field">
+            <select name="month" class="dark-filter-select" id="dashboardMonth">
+                {% for m in month_range %}
+                <option value="{{ m }}" {% if m == filter_month %}selected{% endif %}>
+                    {% if m == 1 %}January{% elif m == 2 %}February{% elif m == 3 %}March{% elif m == 4 %}April{% elif m == 5 %}May{% elif m == 6 %}June{% elif m == 7 %}July{% elif m == 8 %}August{% elif m == 9 %}September{% elif m == 10 %}October{% elif m == 11 %}November{% else %}December{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Year Select -->
+        <div class="dark-filter-field">
+            <select name="year" class="dark-filter-select" id="dashboardYear">
+                {% for y in year_range %}
+                <option value="{{ y }}" {% if y == filter_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Next arrow -->
+        <button type="button" class="dark-filter-arrow" onclick="adjustDashboardDate(1)" title="Next month">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+
+        <!-- Go Button -->
+        <button type="submit" class="dark-filter-go">
+            Go
+        </button>
+
+        {% if filter_month != current_month or filter_year != current_year %}
+        <a href="?" class="btn btn-sm btn-warning ms-2">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> This Month
+        </a>
+        {% endif %}
+
+    </div>
+</div>
+</form>
+
+<!-- ════════════════════════════════════════════
+     ALL-TIME STATS (keep existing cards)
+════════════════════════════════════════════ -->
+<div class="row mb-2">
+    <div class="col-12">
+        <h5 class="text-muted fw-semibold text-uppercase" style="font-size:.8rem; letter-spacing:.1em;">
+            <i class="bi bi-bar-chart-fill"></i> All-Time Overview
+        </h5>
+    </div>
+</div>
+<div class="row mb-4 g-3">
+
+    <!-- Total Repairs -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-1 fw-bold text-primary">{{ stats.total }}</div>
+                <div class="small text-muted">Total Repairs</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+            <div class="card-body text-center py-3">
+                <div class="fs-1 fw-bold text-success">{{ stats.completed }}</div>
+                <div class="small text-muted">Fixed ✅</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
+            <div class="card-body text-center py-3">
+                <div class="fs-1 fw-bold text-warning">{{ stats.pending }}</div>
+                <div class="small text-muted">Pending ⏳</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In Progress -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card border-0 shadow-sm h-100 border-start border-info border-4">
+            <div class="card-body text-center py-3">
+                <div class="fs-1 fw-bold text-info">{{ stats.in_progress }}</div>
+                <div class="small text-muted">In Progress 🔧</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Revenue -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
+            <div class="card-body text-center py-3">
+                <div class="fs-3 fw-bold text-primary">D{{ stats.total_revenue|floatformat:0 }}</div>
+                <div class="small text-muted">Total Revenue 💰</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Customers -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="card border-0 shadow-sm h-100 border-start border-secondary border-4">
+            <div class="card-body text-center py-3">
+                <div class="fs-1 fw-bold text-secondary">{{ stats.total_customers }}</div>
+                <div class="small text-muted">Customers 👥</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     THIS MONTH STATS
+════════════════════════════════════════════ -->
+<div class="row mb-2">
+    <div class="col-12">
+        <h5 class="text-muted fw-semibold text-uppercase" style="font-size:.8rem; letter-spacing:.1em;">
+            <i class="bi bi-calendar-month"></i>
+            {% if filter_month == current_month and filter_year == current_year %}
+                This Month ({{ filter_month|month_name }} {{ filter_year }})
+            {% else %}
+                {{ filter_month|month_name }} {{ filter_year }}
+            {% endif %}
+        </h5>
+    </div>
+</div>
+
+<div class="row mb-4 g-3">
+    <!-- Phones Received -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-3">
+                <div class="fs-2 fw-bold text-dark">{{ monthly_stats.received }}</div>
+                <div class="small text-muted">Phones Received 📱</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fixed This Month -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-success border-4">
+            <div class="card-body text-center py-3">
+                <div class="fs-2 fw-bold text-success">{{ monthly_stats.fixed }}</div>
+                <div class="small text-muted">Fixed This Month ✅</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Still Pending -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-warning border-4">
+            <div class="card-body text-center py-3">
+                <div class="fs-2 fw-bold text-warning">{{ monthly_stats.pending }}</div>
+                <div class="small text-muted">Still Pending ⏳</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue This Month -->
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100 border-start border-primary border-4">
+            <div class="card-body text-center py-3">
+                <div class="fs-4 fw-bold text-primary">D{{ monthly_stats.revenue|floatformat:0 }}</div>
+                <div class="small text-muted">Revenue This Month 💵</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     QUICK ACTIONS
+════════════════════════════════════════════ -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header-strip d-flex align-items-center px-4 py-3">
+                <span class="fw-semibold" style="font-size:.9rem;">
+                    <i class="bi bi-lightning-charge me-1 opacity-75"></i> Quick Actions
+                </span>
+            </div>
+            <div class="card-body d-flex flex-wrap gap-2 py-3">
+                <a href="{% url 'repair_shop:create_repair_transaction' %}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-tools me-1"></i> New Repair
+                </a>
+                <a href="{% url 'repair_shop:create_customer' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-person-plus me-1"></i> New Customer
+                </a>
+                <a href="{% url 'repair_shop:create_gadget' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-phone-flip me-1"></i> Register Gadget
+                </a>
+                <a href="{% url 'repair_shop:repair_transaction_list' %}" class="btn btn-outline-dark btn-sm">
+                    <i class="bi bi-list-ul me-1"></i> All Repairs
+                </a>
+                <a href="{% url 'repair_shop:customer_list' %}" class="btn btn-outline-dark btn-sm">
+                    <i class="bi bi-people me-1"></i> Customers
+                </a>
+                <a href="{% url 'repair_shop:receipt_list' %}" class="btn btn-outline-dark btn-sm">
+                    <i class="bi bi-receipt me-1"></i> Receipts
+                </a>
+                <a href="{% url 'repair_shop:user_list' %}" class="btn btn-outline-dark btn-sm">
+                    <i class="bi bi-person-gear me-1"></i> Manage Users
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     THREE-PANEL: COMPLETED · AWAITING PAYMENT · RECENT PAYMENTS
+════════════════════════════════════════════ -->
+<div class="row mb-4">
+
+    <!-- Recently Completed -->
+    <div class="col-lg-4 mb-4 mb-lg-0">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header-strip d-flex align-items-center justify-content-between px-4 py-3">
+                <span class="fw-semibold" style="font-size:.9rem;">
+                    <i class="bi bi-check-circle me-1 opacity-75"></i> Recently Completed
+                </span>
+                <a href="{% url 'repair_shop:repair_transaction_list' %}?status=Completed"
+                   class="text-white small text-decoration-none opacity-75 hover-opacity-100">
+                    All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_completed %}
+                <div class="table-responsive">
+                    <table class="table rtable mb-0">
+                        <thead>
+                            <tr><th>Code</th><th>Device</th><th>Cost</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for repair in recent_completed %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'repair_shop:repair_transaction_detail' repair.id %}" class="text-decoration-none">
+                                        <span class="code-badge">{{ repair.code }}</span>
+                                    </a>
+                                </td>
+                                <td>
+                                    <div class="fw-medium" style="font-size:.8rem;">{{ repair.gadget.gadget_brand }}</div>
+                                    <div class="text-muted" style="font-size:.7rem;">{{ repair.gadget.gadget_model }}</div>
+                                </td>
+                                <td class="fw-semibold" style="font-size:.8rem;">D{{ repair.total_cost|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted small mb-0">No completed repairs yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Awaiting Payment -->
+    <div class="col-lg-4 mb-4 mb-lg-0">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header-strip d-flex align-items-center justify-content-between px-4 py-3" style="background:#b45309;">
+                <span class="fw-semibold" style="font-size:.9rem;">
+                    <i class="bi bi-cash-coin me-1 opacity-75"></i> Awaiting Payment
+                </span>
+                <a href="{% url 'repair_shop:repair_transaction_list' %}?status=Completed&payment=unpaid"
+                   class="text-white small text-decoration-none opacity-75 hover-opacity-100">
+                    All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if awaiting_payment %}
+                <div class="table-responsive">
+                    <table class="table rtable mb-0">
+                        <thead>
+                            <tr><th>Code</th><th>Customer</th><th>Due</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for repair in awaiting_payment %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'repair_shop:repair_transaction_detail' repair.id %}" class="text-decoration-none">
+                                        <span class="code-badge">{{ repair.code }}</span>
+                                    </a>
+                                </td>
+                                <td style="font-size:.8rem;">
+                                    {{ repair.gadget.customer.first_name }} {{ repair.gadget.customer.last_name }}
+                                </td>
+                                <td style="font-size:.8rem;">
+                                    <a href="{% url 'repair_shop:add_payment' repair.id %}" class="fw-bold text-danger text-decoration-none">
+                                        D{{ repair.total_due|floatformat:2 }}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted small mb-0">No outstanding payments. 🎉</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Payments -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header-strip d-flex align-items-center justify-content-between px-4 py-3" style="background:#065f46;">
+                <span class="fw-semibold" style="font-size:.9rem;">
+                    <i class="bi bi-wallet2 me-1 opacity-75"></i> Recent Payments
+                </span>
+                <a href="{% url 'repair_shop:repair_transaction_list' %}?payment=paid"
+                   class="text-white small text-decoration-none opacity-75 hover-opacity-100">
+                    All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_payments %}
+                <div class="table-responsive">
+                    <table class="table rtable mb-0">
+                        <thead>
+                            <tr><th>Code</th><th>Method</th><th>Amount</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in recent_payments %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'repair_shop:repair_transaction_detail' payment.transaction.id %}" class="text-decoration-none">
+                                        <span class="code-badge">{{ payment.transaction.code }}</span>
+                                    </a>
+                                </td>
+                                <td style="font-size:.8rem;">
+                                    {% if payment.payment_type == 'CASH' %}
+                                    <span class="badge bg-secondary" style="font-size:.7rem;">Cash</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark" style="font-size:.7rem;">Mobile</span>
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold text-success" style="font-size:.8rem;">
+                                    D{{ payment.amount|floatformat:2 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted small mb-0">No payments recorded yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════
+     RECENT REPAIRS (full-width table)
+════════════════════════════════════════════ -->
+<div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-4">
+    <div class="card-header-strip d-flex align-items-center justify-content-between px-4 py-3">
+        <span class="fw-semibold" style="font-size:.9rem;">
+            <i class="bi bi-table me-1 opacity-75"></i> Recent Repairs
+        </span>
+        <a href="{% url 'repair_shop:repair_transaction_list' %}"
+           class="text-white small text-decoration-none opacity-75 hover-opacity-100">
+            View All <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+    {% if recent_repairs %}
+    <div class="table-responsive">
+        <table class="table rtable mb-0">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Gadget</th>
+                    <th>Customer</th>
+                    <th>Technician</th>
+                    <th>Status</th>
+                    <th>Brought In</th>
+                    <th>Due</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for repair in recent_repairs %}
+                <tr>
+                    <td><span class="code-badge">{{ repair.code }}</span></td>
+                    <td>
+                        <div class="fw-medium lh-sm" style="font-size:.875rem;">{{ repair.gadget.gadget_brand }}</div>
+                        <div class="text-muted" style="font-size:.75rem;">{{ repair.gadget.gadget_model }}</div>
+                    </td>
+                    <td>
+                        <a href="{% url 'repair_shop:customer_detail' repair.gadget.customer.id %}"
+                           class="text-decoration-none fw-medium link-customer" style="font-size:.875rem;">
+                            {{ repair.gadget.customer.first_name }} {{ repair.gadget.customer.last_name }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if repair.technician %}
+                            <span class="tech-badge">{{ repair.technician.username }}</span>
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if repair.status == 'Pending' %}
+                        <span class="spill spill-pending">Pending</span>
+                        {% elif repair.status == 'In Progress' %}
+                        <span class="spill spill-inprog">In Progress</span>
+                        {% elif repair.status == 'Completed' %}
+                        <span class="spill spill-done">Completed</span>
+                        {% else %}
+                        <span class="spill spill-other">{{ repair.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted" style="font-size:.8rem; white-space:nowrap;">
+                        {{ repair.brought_in_date|date:"M d, Y" }}
+                    </td>
+                    <td style="font-size:.875rem;">
+                        {% if not repair.has_price %}
+                            <span class="spill" style="background:#f3f4f6;color:#6b7280;font-size:.7rem;">
+                                <i class="bi bi-dash-circle me-1"></i>Not Priced
+                            </span>
+                        {% elif repair.is_fully_paid %}
+                            <span class="spill spill-done" style="font-size:.7rem;">
+                                <i class="bi bi-check-lg me-1"></i>Paid
+                            </span>
+                        {% else %}
+                            <span class="fw-semibold text-danger">D{{ repair.total_due|floatformat:2 }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1 justify-content-center">
+                            <a href="{% url 'repair_shop:repair_transaction_detail' repair.id %}"
+                               class="act-btn act-btn-view" title="View">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'repair_shop:update_repair_transaction' repair.id %}"
+                               class="act-btn act-btn-edit" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if repair.status == 'Completed' %}
+                                {% if repair.is_fully_paid %}
+                                <a href="{% url 'repair_shop:create_transaction_receipt' repair.id %}"
+                                   class="act-btn act-btn-receipt" title="Receipt">
+                                    <i class="bi bi-receipt"></i>
+                                </a>
+                                {% else %}
+                                <a href="{% url 'repair_shop:add_payment' repair.id %}"
+                                   class="act-btn act-btn-pay" title="Record Payment">
+                                    <i class="bi bi-cash-coin"></i>
+                                </a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+        <p class="text-muted small mb-0">No repairs yet. <a href="{% url 'repair_shop:create_repair_transaction' %}">Create the first one.</a></p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ════════════════════════════════════════════
+     SCOPED STYLES
+════════════════════════════════════════════ -->
+<style>
+/* ── Variables ──────────────────────────────── */
+:root {
+    --brand: #0D1226;
+    --brand-lt: #1a2340;
+    --brand-tx: #FEFBFC;
+    --accent: #4F6AF5;
+}
+
+/* ── Page title ─────────────────────────────── */
+.page-title { color: var(--brand); letter-spacing: -.3px; }
+
+/* ── Create button (green) ───────────────────── */
+.btn-brand-create {
+    background: #0f766e;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 500;
+    transition: background .15s, transform .1s;
+}
+.btn-brand-create:hover { background: #115e59; color: #fff; transform: translateY(-1px); }
+
+/* ── DARK FILTER BAR (matching repair list) ───── */
+.dark-filter-bar {
+    background: var(--brand);
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(13,18,38,.25);
+}
+.dark-filter-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.dark-filter-label {
+    color: rgba(255,255,255,.7);
+    font-size: .8rem;
+    font-weight: 500;
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.dark-filter-field { position: relative; }
+
+.dark-filter-select {
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: .85rem;
+    color: #111827;
+    outline: none;
+    height: 38px;
+    min-width: 110px;
+    cursor: pointer;
+}
+.dark-filter-select:focus { box-shadow: 0 0 0 2px rgba(79,106,245,.4); }
+
+.dark-filter-arrow {
+    width: 36px;
+    height: 38px;
+    border: 1.5px solid rgba(255,255,255,.3);
+    background: transparent;
+    color: rgba(255,255,255,.8);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .15s;
+}
+.dark-filter-arrow:hover {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.5);
+    color: #fff;
+}
+
+.dark-filter-go {
+    background: #fff;
+    color: var(--brand);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    height: 38px;
+}
+.dark-filter-go:hover {
+    background: #f3f4f6;
+    transform: translateY(-1px);
+}
+
+/* ── Card header strip ──────────────────────── */
+.card-header-strip {
+    background: var(--brand);
+    color: var(--brand-tx);
+}
+.hover-opacity-100:hover { opacity: 1 !important; }
+
+/* ── Table ──────────────────────────────────── */
+.rtable thead th {
+    background: #f8f9fb;
+    border-bottom: 2px solid #e2e6f0;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6b7280;
+    padding: .65rem 1rem;
+    white-space: nowrap;
+}
+.rtable tbody td { padding: .7rem 1rem; vertical-align: middle; border-color: #f1f3f9; }
+.rtable tbody tr { transition: background .1s; }
+.rtable tbody tr:hover { background: #f8f9ff; }
+
+/* Code badge */
+.code-badge {
+    display: inline-block;
+    background: #f1f3f9;
+    color: var(--brand);
+    border: 1px solid #e2e6f0;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-family: ui-monospace, monospace;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+}
+
+/* Technician badge */
+.tech-badge {
+    display: inline-block;
+    background: #f1f3f9;
+    color: #374151;
+    border: 1px solid #e2e6f0;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: .75rem;
+    font-weight: 500;
+}
+
+/* Status pills */
+.spill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.spill-pending  { background: #fef9c3; color: #92400e; }
+.spill-inprog   { background: #dbeafe; color: #1e40af; }
+.spill-done     { background: #dcfce7; color: #166534; }
+.spill-other    { background: #f3f4f6; color: #374151; }
+
+/* Action buttons */
+.act-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1.5px solid #e2e6f0;
+    background: #f8f9fb;
+    color: #374151;
+    font-size: .85rem;
+    text-decoration: none;
+    transition: all .15s;
+}
+.act-btn:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+.act-btn-view  { color: #2563eb; border-color: #bfdbfe; background: #eff6ff; }
+.act-btn-view:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+.act-btn-edit  { color: #d97706; border-color: #fde68a; background: #fffbeb; }
+.act-btn-edit:hover { background: #d97706; color: #fff; border-color: #d97706; }
+.act-btn-receipt { color: #059669; border-color: #a7f3d0; background: #ecfdf5; }
+.act-btn-receipt:hover { background: #059669; color: #fff; border-color: #059669; }
+.act-btn-pay  { color: #dc2626; border-color: #fecaca; background: #fef2f2; }
+.act-btn-pay:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+
+/* Customer name link */
+.link-customer { color: #374151; }
+.link-customer:hover { color: var(--accent); }
+</style>
+
+<!-- JavaScript for date navigation -->
+<script>
+function adjustDashboardDate(direction) {
+    const monthSelect = document.getElementById('dashboardMonth');
+    const yearSelect = document.getElementById('dashboardYear');
+
+    let month = parseInt(monthSelect.value);
+    let year = parseInt(yearSelect.value);
+
+    month += direction;
+
+    if (month > 12) {
+        month = 1;
+        year++;
+    } else if (month < 1) {
+        month = 12;
+        year--;
+    }
+
+    monthSelect.value = month;
+    yearSelect.value = year;
+
+    document.getElementById('dashboardFilterForm').submit();
+}
+</script>
+
+{% endblock %}

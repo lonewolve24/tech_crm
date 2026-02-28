@@ -1,0 +1,221 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}Notifications - Bayo Electronics{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="fw-bold mb-0"><i class="bi bi-bell-fill me-2"></i>Notifications</h1>
+        <p class="text-muted small mb-0">Stay up to date with repair activity</p>
+    </div>
+    <span class="badge bg-brand fs-6">{{ notifications|length }} total</span>
+</div>
+
+<!-- Filter bar (hidden for technician-only view) -->
+{% if not is_technician_only %}
+<div class="filter-bar card mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-end gap-2">
+            <span class="filter-label-standalone">Filter by type:</span>
+            <a href="{% url 'repair_shop:notification_list' %}"
+               class="btn btn-sm {% if not type_filter %}btn-brand-primary{% else %}btn-brand-outline{% endif %}">
+                <i class="bi bi-list me-1"></i>All
+            </a>
+            <a href="?type=ASSIGNED"
+               class="btn btn-sm {% if type_filter == 'ASSIGNED' %}btn-brand-primary{% else %}btn-brand-outline{% endif %}">
+                <i class="bi bi-person-check-fill me-1"></i>New Assignments
+            </a>
+            <a href="?type=COMPLETED"
+               class="btn btn-sm {% if type_filter == 'COMPLETED' %}btn-brand-primary{% else %}btn-brand-outline{% endif %}">
+                <i class="bi bi-check-circle-fill me-1"></i>Completed
+            </a>
+            <a href="?type=PAYMENT"
+               class="btn btn-sm {% if type_filter == 'PAYMENT' %}btn-brand-primary{% else %}btn-brand-outline{% endif %}">
+                <i class="bi bi-cash-coin me-1"></i>Payments
+            </a>
+            <a href="?type=PAY_PENDING"
+               class="btn btn-sm {% if type_filter == 'PAY_PENDING' %}btn-brand-primary{% else %}btn-brand-outline{% endif %}">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>Payment Pending
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Notification cards -->
+<div class="row">
+    <div class="col-lg-8 offset-lg-2">
+        {% if notifications %}
+            {% for notif in notifications %}
+            <div class="notif-card mb-3 {% if not notif.is_read %}notif-unread{% endif %}">
+                <div class="d-flex align-items-start gap-3">
+
+                    <!-- Icon -->
+                    <div class="notif-icon-wrap flex-shrink-0">
+                        {% if notif.notification_type == 'COMPLETED' %}
+                        <span class="notif-icon notif-icon-completed">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </span>
+                        {% elif notif.notification_type == 'ASSIGNED' %}
+                        <span class="notif-icon notif-icon-assigned">
+                            <i class="bi bi-person-check-fill"></i>
+                        </span>
+                        {% elif notif.notification_type == 'PAY_PENDING' %}
+                        <span class="notif-icon notif-icon-pay-pending">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </span>
+                        {% else %}
+                        <span class="notif-icon notif-icon-payment">
+                            <i class="bi bi-cash-coin"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Body -->
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start mb-1 gap-2 flex-wrap">
+                            <strong class="{% if not notif.is_read %}text-brand-dark{% else %}text-muted{% endif %}">
+                                {{ notif.title }}
+                            </strong>
+                            <small class="text-muted text-nowrap">{{ notif.created_at|timesince }} ago</small>
+                        </div>
+
+                        <p class="text-muted small mb-2">{{ notif.message }}</p>
+
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            {% if notif.repair %}
+                            <a href="{% url 'repair_shop:mark_notification_read' notif.id %}"
+                               class="btn btn-xs btn-brand-outline">
+                                <i class="bi bi-arrow-right-circle me-1"></i>View Repair
+                            </a>
+                            {% endif %}
+
+                            {% if not notif.is_read %}
+                            <span class="badge bg-brand">New</span>
+                            {% endif %}
+
+                            <span class="type-pill
+                                {% if notif.notification_type == 'COMPLETED' %}type-completed
+                                {% elif notif.notification_type == 'ASSIGNED' %}type-assigned
+                                {% elif notif.notification_type == 'PAY_PENDING' %}type-pay-pending
+                                {% else %}type-payment{% endif %}">
+                                {{ notif.get_notification_type_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-bell-slash fs-1 text-muted mb-3 d-block"></i>
+                    <h5 class="text-muted">No notifications yet</h5>
+                    <p class="text-muted small">
+                        {% if is_technician_only %}
+                            You'll be notified when a new repair is assigned to you.
+                        {% else %}
+                            You'll be notified when repairs are assigned or completed.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'repair_shop:home' %}" class="btn btn-brand-primary mt-2">
+                        Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* ── Brand ────────────────────────────────── */
+:root {
+    --brand-bg: #0D1226;
+    --brand-text: #FEFBFC;
+    --brand-accent: #4F6AF5;
+}
+.bg-brand { background: var(--brand-bg) !important; }
+.text-brand-dark { color: var(--brand-bg); }
+
+.btn-brand-primary {
+    background: var(--brand-bg);
+    color: var(--brand-text);
+    border: none;
+    border-radius: 8px;
+    font-size: .8rem;
+}
+.btn-brand-primary:hover { background: #1a2340; color: var(--brand-text); }
+
+.btn-brand-outline {
+    background: transparent;
+    color: var(--brand-bg);
+    border: 1.5px solid var(--brand-bg);
+    border-radius: 8px;
+    font-size: .8rem;
+}
+.btn-brand-outline:hover { background: var(--brand-bg); color: var(--brand-text); }
+
+.btn-xs {
+    padding: .2rem .55rem;
+    font-size: .75rem;
+    border-radius: 6px;
+    line-height: 1.4;
+}
+
+/* ── Filter bar ──────────────────────────── */
+.filter-bar { border-radius: 12px; border: 1.5px solid #e9ecef; }
+.filter-label-standalone {
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #6c757d;
+    align-self: center;
+}
+
+/* ── Notification card ───────────────────── */
+.notif-card {
+    background: #fff;
+    border-radius: 14px;
+    border: 1.5px solid #e9ecef;
+    padding: 1.1rem 1.25rem;
+    transition: box-shadow .15s;
+}
+.notif-card:hover { box-shadow: 0 4px 18px rgba(13,18,38,.1); }
+.notif-unread {
+    border-left: 4px solid var(--brand-bg) !important;
+    background: #f8f9ff;
+}
+
+/* ── Notification icons ──────────────────── */
+.notif-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 1.2rem;
+}
+.notif-icon-completed  { background: #d1e7dd; color: #0a3622; }
+.notif-icon-assigned   { background: #cfe2ff; color: #084298; }
+.notif-icon-payment    { background: #fff3cd; color: #664d03; }
+.notif-icon-pay-pending { background: #f8d7da; color: #842029; }
+
+/* ── Type pills ──────────────────────────── */
+.type-pill {
+    display: inline-block;
+    padding: .2em .65em;
+    border-radius: 20px;
+    font-size: .7rem;
+    font-weight: 600;
+}
+.type-completed  { background: #d1e7dd; color: #0a3622; }
+.type-assigned   { background: #cfe2ff; color: #084298; }
+.type-payment    { background: #fff3cd; color: #664d03; }
+.type-pay-pending { background: #f8d7da; color: #842029; }
+</style>
+{% endblock %}

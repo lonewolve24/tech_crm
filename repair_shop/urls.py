@@ -19,6 +19,14 @@ urlpatterns = [
     # ============================================
     path('', views.home, name='home'),
     
+    # Admin Dashboard
+    path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    # Template: repair_shop/admin_dashboard.html
+
+    # Secretary Dashboard
+    path('secretary/dashboard/', views.secretary_dashboard, name='secretary_dashboard'),
+    # Template: repair_shop/secretary_dashboard.html
+    
     # ============================================
     # CUSTOMER URLS
     # ============================================
@@ -78,6 +86,14 @@ urlpatterns = [
     path('repairs/my-repairs/', views.my_assigned_repairs, name='my_assigned_repairs'),
     # Template: repair_shop/repairs/my_assigned_repairs.html
     
+    # Technician Dashboard
+    path('technician/dashboard/', views.technician_dashboard, name='technician_dashboard'),
+    # Template: repair_shop/technician_dashboard.html
+    
+    # Technician Update Status
+    path('repairs/<int:transaction_id>/update-status/', views.technician_update_status, name='technician_update_status'),
+    # Template: repair_shop/repairs/technician_update_status.html
+    
     # Repair Transaction Detail
     path('repairs/<int:transaction_id>/', views.repair_transaction_detail, name='repair_transaction_detail'),
     # Template: repair_shop/repairs/repair_transaction_detail.html
@@ -122,6 +138,41 @@ urlpatterns = [
     # Receipt List
     path('receipts/', views.receipt_list, name='receipt_list'),
     # Template: repair_shop/receipts/receipt_list.html
+    
+    # ============================================
+    # PAYMENT URLS
+    # ============================================
+    # Add Payment to a completed repair
+    path('repairs/<int:transaction_id>/payment/add/', views.add_payment, name='add_payment'),
+
+    # ============================================
+    # NOTIFICATION URLS
+    # ============================================
+    path('notifications/', views.notification_list, name='notification_list'),
+    path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+
+    # ============================================
+    # USER MANAGEMENT URLS - ADMIN ONLY
+    # ============================================
+    
+    # User Profile
+    path('profile/', views.user_profile, name='user_profile'),
+    # Template: repair_shop/users/user_profile.html
+    
+    # User List (Admin)
+    path('manage/users/', views.user_list, name='user_list'),
+    # Template: repair_shop/users/user_list.html
+    
+    # Create User (Admin)
+    path('manage/users/create/', views.create_user, name='create_user'),
+    # Template: repair_shop/users/create_user.html
+    
+    # Edit User (Admin)
+    path('manage/users/<int:user_id>/edit/', views.edit_user, name='edit_user'),
+    # Template: repair_shop/users/edit_user.html
+    
+    # Delete User (Admin)
+    path('manage/users/<int:user_id>/delete/', views.delete_user, name='delete_user'),
 ]
 
 # URL Naming Convention:

@@ -1,32 +1,41 @@
 User:
-first_name
-last_name
-email
-is_admin = models.BooleanField(default=False)
-is_staff = models.BooleanField(default=False)
-is_editor = models.BooleanField(default=False)
-is_technician = models.BooleanField(default=False)
+first_name =
+last_name = 
+email = 
+is_admin = 
+is_staff =
+is_editor =
+is_technician = 
+
+
+Ids(Enum):
+National_Id_card = NIC 
+Driver_License = DL
+Passport = Ps
+other = O
 
 
 Client:
-first_name
-last_name
-Phone_number
-email(optional)
-id_number
-id_type(choice(id_card, passport, driver_license, other))
-Gadget_detail(fk manay to many)
+first_name =
+last_name =
+Phone_number =
+email(optional) = 
+id_number =
+id_type = (choice(Ids))
+Gadget_detail = (fk manay to many)
 
-Gadget:
-	Gadget_name
-	cretaed_at
+Gadeget_type(Enum):
+smart_phone = 
+laptop = 
+tablet = 
+other = 
 
 GadgetDetail:
-	Gadget(fk)
-	gadget_type(smart_phone,laptop,tablet,other)
-	model_type
-	gadget_os (Andriod, IOS)
-	imei_number
+	Gadget(fk) = 
+	gadget_type(Choice=Gadeget_type)
+	model_type = 
+	gadget_os  = (Andriod, IOS)
+	imei_number = 
 
 
 GadegtRepairWorkinglog:
@@ -40,12 +49,13 @@ GadegtRepairWorkinglog:
 	price_od_repair(int,float)
 
 class RepairTransaction:
-    client = models.ForeignKey(ClientName)
-    gadget_detail = models.ForeignKey(Gadget_detail)
-    brought_in_date = models.DateTimeField()
-    assigned_technician = models.ForeignKey(User)
-    payment_status = models.CharField(choices=PAYMENT_STATUS)
-    transaction_id = models.CharField(unique=True)
+    client = 
+    gadget_detail = 
+    brought_in_date = 
+    assigned_technician = 
+    payment_status = 
+    transaction_id =
+	Unique_code = 
 
 
 

@@ -3,148 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Tech CRM - Repair Management System{% endblock %}</title>
+    <title>{% block title %}Bayo Electronics - Repair Management System{% endblock %}</title>
     
-    <!-- Bootstrap 5 CSS (via CDN) -->
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     
-    <!-- Custom CSS -->
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navbar -->
+
+    <!-- ================================================
+         STICKY NAVBAR
+         ================================================ -->
     <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'repair_shop:home' %}">
-                <i class="bi bi-tools"></i>
-                Tech CRM
+        <div class="container-fluid gap-2">
+
+            <!-- Sidebar toggle (visible on all screen sizes) -->
+            {% if user.is_authenticated %}
+            <button id="sidebarToggleBtn" title="Toggle sidebar" aria-label="Toggle sidebar">
+                <i class="bi bi-layout-sidebar"></i>
+            </button>
+            {% endif %}
+
+            <!-- Brand / Logo -->
+            <a class="navbar-brand me-auto d-flex align-items-center gap-2" href="{% url 'repair_shop:home' %}">
+                <img src="{% static 'images/BAYO ELECTRONICS .jpg' %}" alt="Bayo Electronics" height="40" class="rounded" style="object-fit: cover;">
+                <span class="d-none d-sm-inline">Bayo Electronics</span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+
+            <!-- Bootstrap collapse toggler (for mobile top-bar collapse) -->
+            <button class="navbar-toggler" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <div class="ms-auto d-flex align-items-center gap-3">
-                    <span class="text-white">{{ request.user.username }}</span>
-                    <div class="user-avatar">
-                        {{ request.user.first_name|first|upper }}
-                    </div>
-                    <a href="{% url 'admin:logout' %}" class="btn btn-outline-light btn-sm">
-                        <i class="bi bi-box-arrow-right"></i> Logout
+                    <span class="text-white d-none d-md-inline small">{{ request.user.username }}</span>
+
+                    <!-- Notification Bell -->
+                    <a href="{% url 'repair_shop:notification_list' %}" class="nav-notif-btn position-relative" title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        {% if unread_notification_count %}
+                        <span class="notif-badge">{{ unread_notification_count }}</span>
+                        {% endif %}
                     </a>
+
+                    <!-- User Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button"
+                                id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i>
+                        {{ request.user.first_name|first|upper }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <span class="dropdown-item-text small text-muted px-3">
+                                    {% if request.user.is_superuser %}Admin
+                                    {% elif request.user.is_staff %}Manager
+                                    {% elif request.user.is_technician %}Technician
+                                    {% elif request.user.is_secretary %}Secretary
+                                    {% else %}User
+                                    {% endif %}
+                                    &bull; {{ request.user.get_full_name }}
+                                </span>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'repair_shop:user_profile' %}">
+                                    <i class="bi bi-person"></i> My Profile
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'repair_shop:notification_list' %}">
+                                    <i class="bi bi-bell"></i> Notifications
+                                    {% if unread_notification_count %}
+                                    <span class="badge bg-danger ms-1">{{ unread_notification_count }}</span>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            {% if request.user.is_superuser %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'repair_shop:user_list' %}">
+                                    <i class="bi bi-people"></i> Manage Users
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'repair_shop:create_user' %}">
+                                    <i class="bi bi-person-plus"></i> Create User
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'repair_shop:logout' %}">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Container -->
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarOverlay"></div>
+
+    <!-- ================================================
+         APP BODY: sidebar + main content
+         ================================================ -->
     <div class="app-container">
-        <!-- Sidebar -->
+
+        <!-- ---- SIDEBAR ---- -->
         {% if user.is_authenticated %}
-        <aside class="sidebar">
-            <!-- Dashboard Section -->
-            <div class="sidebar-section">
-                <a href="{% url 'repair_shop:home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">
-                    <i class="bi bi-speedometer2"></i> Dashboard
-                </a>
+        <aside class="sidebar" id="mainSidebar">
+
+            <!-- Collapse chevron button (desktop only) -->
+            <div class="sidebar-collapse-btn">
+                <button id="sidebarChevron" title="Collapse sidebar" aria-label="Collapse sidebar">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
             </div>
 
-            <!-- Customers Section -->
+            <!-- Dashboard -->
+            <div class="sidebar-section">
+                <a href="{% url 'repair_shop:home' %}"
+                   class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="Dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span class="link-text">Dashboard</span>
+                </a>
+                {% if user.is_technician and not user.is_superuser and not user.is_staff %}
+                <a href="{% url 'repair_shop:technician_dashboard' %}"
+                   class="{% if 'technician_dashboard' in request.resolver_match.url_name %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="My Dashboard">
+                    <i class="bi bi-person-workspace"></i>
+                    <span class="link-text">My Dashboard</span>
+                </a>
+                {% endif %}
+                {% if user.is_superuser or user.is_staff %}
+                <a href="{% url 'repair_shop:admin_dashboard' %}"
+                   class="{% if 'admin_dashboard' in request.resolver_match.url_name %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="Admin Dashboard">
+                    <i class="bi bi-bar-chart-line"></i>
+                    <span class="link-text">Admin Dashboard</span>
+                </a>
+                {% endif %}
+                {% if user.is_secretary and not user.is_superuser and not user.is_staff %}
+                <a href="{% url 'repair_shop:secretary_dashboard' %}"
+                   class="{% if 'secretary_dashboard' in request.resolver_match.url_name %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="My Dashboard">
+                    <i class="bi bi-bar-chart-line"></i>
+                    <span class="link-text">My Dashboard</span>
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Customers -->
             {% if perms.repair_shop.view_customer %}
             <div class="sidebar-title">
-                <i class="bi bi-people"></i> Customers
+                <i class="bi bi-people"></i>
+                <span class="link-text">Customers</span>
             </div>
             <div class="sidebar-section">
-                <a href="{% url 'repair_shop:customer_list' %}" class="{% if 'customer' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-list-ul"></i> View Customers
+                <a href="{% url 'repair_shop:customer_list' %}"
+                   class="{% if 'customer' in request.resolver_match.url_name %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="View Customers">
+                    <i class="bi bi-list-ul"></i>
+                    <span class="link-text">View Customers</span>
                 </a>
                 {% if perms.repair_shop.add_customer %}
-                <a href="{% url 'repair_shop:create_customer' %}">
-                    <i class="bi bi-plus-circle"></i> Add Customer
+                <a href="{% url 'repair_shop:create_customer' %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="Add Customer">
+                    <i class="bi bi-plus-circle"></i>
+                    <span class="link-text">Add Customer</span>
                 </a>
                 {% endif %}
             </div>
             {% endif %}
 
-            <!-- Gadgets Section -->
+            <!-- Gadgets -->
             {% if perms.repair_shop.view_gadget %}
             <div class="sidebar-title">
-                <i class="bi bi-phone"></i> Gadgets
+                <i class="bi bi-phone"></i>
+                <span class="link-text">Gadgets</span>
             </div>
             <div class="sidebar-section">
-                <a href="{% url 'repair_shop:gadget_list' %}" class="{% if 'gadget' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-list-ul"></i> View Gadgets
+                <a href="{% url 'repair_shop:gadget_list' %}"
+                   class="{% if 'gadget' in request.resolver_match.url_name %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="View Gadgets">
+                    <i class="bi bi-list-ul"></i>
+                    <span class="link-text">View Gadgets</span>
                 </a>
                 {% if perms.repair_shop.add_gadget %}
-                <a href="{% url 'repair_shop:create_gadget' %}">
-                    <i class="bi bi-plus-circle"></i> Add Gadget
+                <a href="{% url 'repair_shop:create_gadget' %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="Add Gadget">
+                    <i class="bi bi-plus-circle"></i>
+                    <span class="link-text">Add Gadget</span>
                 </a>
                 {% endif %}
             </div>
             {% endif %}
 
-            <!-- Repairs Section -->
+            <!-- Repairs -->
             {% if perms.repair_shop.view_gadgetrepairtransaction %}
             <div class="sidebar-title">
-                <i class="bi bi-wrench"></i> Repairs
+                <i class="bi bi-wrench"></i>
+                <span class="link-text">Repairs</span>
             </div>
             <div class="sidebar-section">
-                {% if user.is_staff or user.is_superuser %}
-                <a href="{% url 'repair_shop:repair_transaction_list' %}" class="{% if 'repair_transaction' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-list-ul"></i> All Repairs
+                {% if user.is_staff or user.is_superuser or user.is_secretary %}
+                <a href="{% url 'repair_shop:repair_transaction_list' %}"
+                   class="{% if 'repair_transaction' in request.resolver_match.url_name %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="All Repairs">
+                    <i class="bi bi-list-ul"></i>
+                    <span class="link-text">All Repairs</span>
                 </a>
                 {% else %}
-                <a href="{% url 'repair_shop:my_assigned_repairs' %}" class="{% if 'my_assigned_repairs' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-list-ul"></i> My Repairs
+                <a href="{% url 'repair_shop:my_assigned_repairs' %}"
+                   class="{% if 'my_assigned_repairs' in request.resolver_match.url_name %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="My Repairs">
+                    <i class="bi bi-list-ul"></i>
+                    <span class="link-text">My Repairs</span>
                 </a>
                 {% endif %}
                 {% if perms.repair_shop.add_gadgetrepairtransaction %}
-                <a href="{% url 'repair_shop:create_repair_transaction' %}">
-                    <i class="bi bi-plus-circle"></i> New Repair
+                <a href="{% url 'repair_shop:create_repair_transaction' %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="New Repair">
+                    <i class="bi bi-plus-circle"></i>
+                    <span class="link-text">New Repair</span>
                 </a>
                 {% endif %}
             </div>
             {% endif %}
 
-            <!-- Receipts Section -->
+            <!-- Receipts -->
             {% if perms.repair_shop.view_gadgettransactionreceipt %}
             <div class="sidebar-title">
-                <i class="bi bi-receipt"></i> Receipts
+                <i class="bi bi-receipt"></i>
+                <span class="link-text">Receipts</span>
             </div>
             <div class="sidebar-section">
-                <a href="{% url 'repair_shop:receipt_list' %}" class="{% if 'receipt' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-list-ul"></i> View Receipts
+                <a href="{% url 'repair_shop:receipt_list' %}"
+                   class="{% if 'receipt' in request.resolver_match.url_name %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="View Receipts">
+                    <i class="bi bi-list-ul"></i>
+                    <span class="link-text">View Receipts</span>
                 </a>
             </div>
             {% endif %}
 
-            <!-- Admin Section (Superuser Only) -->
+            <!-- Administration (superuser only) -->
             {% if user.is_superuser %}
             <div class="sidebar-title">
-                <i class="bi bi-gear"></i> Administration
+                <i class="bi bi-gear"></i>
+                <span class="link-text">Administration</span>
             </div>
             <div class="sidebar-section">
-                <a href="/admin/" target="_blank">
-                    <i class="bi bi-speedometer2"></i> Django Admin
+                <a href="{% url 'repair_shop:user_list' %}"
+                   class="{% if 'user' in request.resolver_match.url_name %}active{% endif %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="Manage Users">
+                    <i class="bi bi-people-fill"></i>
+                    <span class="link-text">Manage Users</span>
                 </a>
-                <a href="/admin/auth/user/" target="_blank">
-                    <i class="bi bi-people-fill"></i> Manage Users
+                <a href="{% url 'repair_shop:create_user' %}"
+                   data-bs-toggle="tooltip" data-bs-placement="right" title="Create User">
+                    <i class="bi bi-person-plus"></i>
+                    <span class="link-text">Create User</span>
                 </a>
             </div>
             {% endif %}
+
         </aside>
         {% endif %}
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Messages -->
+        <!-- ---- MAIN CONTENT ---- -->
+        <main class="main-content" id="mainContent">
+            <!-- Flash messages -->
             {% if messages %}
-            <div class="messages" style="margin-bottom: 2rem;">
+            <div class="mb-4">
                 {% for message in messages %}
                 <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                     <i class="bi bi-info-circle"></i> {{ message }}
@@ -154,31 +299,147 @@
             </div>
             {% endif %}
 
-            <!-- Page Content -->
             {% block content %}{% endblock %}
         </main>
     </div>
 
     <!-- Footer -->
-    <footer style="background-color: #2c3e50; color: white; padding: 1.5rem; text-align: center; margin-top: 3rem;">
-        <p>&copy; 2025 Tech CRM - Repair Management System. All rights reserved.</p>
+    <footer>
+        <p>&copy; 2025 Bayo Electronics &mdash; Repair Management System. All rights reserved.</p>
     </footer>
 
-    <!-- Bootstrap 5 JS Bundle (includes Popper.js) -->
+    <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Custom JS -->
     <script>
-        // Auto-hide alerts after 5 seconds
-        document.querySelectorAll('.alert').forEach(alert => {
-            setTimeout(() => {
-                const bsAlert = new bootstrap.Alert(alert);
+    /* -------------------------------------------------------
+       Sidebar toggle logic
+       ------------------------------------------------------- */
+    (function () {
+        const sidebar   = document.getElementById('mainSidebar');
+        const overlay   = document.getElementById('sidebarOverlay');
+        const navBtn    = document.getElementById('sidebarToggleBtn');
+        const chevron   = document.getElementById('sidebarChevron');
+        const STORAGE_KEY = 'techcrm_sidebar_collapsed';
+        const MOBILE_BP   = 991.98;
+
+        if (!sidebar) return; // not authenticated
+
+        function isMobile() {
+            return window.innerWidth <= MOBILE_BP;
+        }
+
+        /* ------ Desktop: collapsed / expanded ------ */
+        function setCollapsed(collapsed) {
+            if (collapsed) {
+                sidebar.classList.add('collapsed');
+                localStorage.setItem(STORAGE_KEY, '1');
+            } else {
+                sidebar.classList.remove('collapsed');
+                localStorage.setItem(STORAGE_KEY, '0');
+            }
+            // Tooltips: enable only when collapsed
+            updateTooltips(collapsed);
+        }
+
+        /* ------ Mobile: open / close drawer ------ */
+        function setMobileOpen(open) {
+            if (open) {
+                sidebar.classList.add('mobile-open');
+                overlay.classList.add('visible');
+            } else {
+                sidebar.classList.remove('mobile-open');
+                overlay.classList.remove('visible');
+            }
+        }
+
+        /* ------ Bootstrap tooltips for collapsed icons ------ */
+        var tooltipInstances = [];
+
+        function updateTooltips(collapsed) {
+            // destroy old
+            tooltipInstances.forEach(t => t.dispose());
+            tooltipInstances = [];
+            if (collapsed && !isMobile()) {
+                sidebar.querySelectorAll('a[data-bs-toggle="tooltip"]').forEach(el => {
+                    tooltipInstances.push(new bootstrap.Tooltip(el, { trigger: 'hover' }));
+                });
+            }
+        }
+
+        /* ------ Navbar toggle button ------ */
+        navBtn && navBtn.addEventListener('click', function () {
+            if (isMobile()) {
+                setMobileOpen(!sidebar.classList.contains('mobile-open'));
+            } else {
+                setCollapsed(!sidebar.classList.contains('collapsed'));
+            }
+        });
+
+        /* ------ Sidebar chevron button (desktop) ------ */
+        chevron && chevron.addEventListener('click', function () {
+            setCollapsed(!sidebar.classList.contains('collapsed'));
+        });
+
+        /* ------ Close mobile sidebar when overlay is tapped ------ */
+        overlay && overlay.addEventListener('click', function () {
+            setMobileOpen(false);
+        });
+
+        /* ------ Restore desktop state from localStorage ------ */
+        if (!isMobile()) {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved === '1') {
+                setCollapsed(true);
+            }
+        }
+
+        /* ------ Recalculate on resize ------ */
+        window.addEventListener('resize', function () {
+            if (!isMobile()) {
+                // Close mobile drawer if window grows
+                sidebar.classList.remove('mobile-open');
+                overlay.classList.remove('visible');
+                // Re-apply desktop state
+                const saved = localStorage.getItem(STORAGE_KEY);
+                setCollapsed(saved === '1');
+            } else {
+                // On mobile, always show full-width when open
+                sidebar.classList.remove('collapsed');
+                updateTooltips(false);
+            }
+        });
+
+        /* ------ Auto-hide sidebar links tooltip on click (mobile) ------ */
+        sidebar.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function () {
+                if (isMobile()) setMobileOpen(false);
+            });
+        });
+
+        /* ------ Auto-hide flash alerts after 5 s ------ */
+        document.querySelectorAll('.alert').forEach(function (alert) {
+            setTimeout(function () {
+                const bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
                 bsAlert.close();
             }, 5000);
         });
+
+        /* ------ Sync navbar height to CSS variable (accurate positioning) ------ */
+        function syncNavbarHeight() {
+            const navbar = document.querySelector('.navbar');
+            if (navbar) {
+                document.documentElement.style.setProperty(
+                    '--navbar-height', navbar.offsetHeight + 'px'
+                );
+            }
+        }
+        syncNavbarHeight();
+        window.addEventListener('resize', syncNavbarHeight);
+
+    })();
     </script>
 
     {% block extra_js %}{% endblock %}
 </body>
 </html>
-

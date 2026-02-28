@@ -1,0 +1,183 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}Edit User{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil"></i> Edit User: {{ user_obj.username }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger" role="alert">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}<br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">
+                                {{ form.email.label }}
+                            </label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.email.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Username -->
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">
+                                {{ form.username.label }}
+                            </label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger mt-1">
+                                    {% for error in form.username.errors %}
+                                        <small>{{ error }}</small><br>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Name Row -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                    {{ form.first_name.label }}
+                                </label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.first_name.errors %}
+                                            <small>{{ error }}</small><br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                    {{ form.last_name.label }}
+                                </label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.last_name.errors %}
+                                            <small>{{ error }}</small><br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Roles Section -->
+                        <div class="card bg-light border-0 mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <i class="bi bi-shield-check"></i> Assign Roles
+                                </h6>
+                                
+                                <div class="form-check mb-2">
+                                    {{ form.is_technician }}
+                                    <label class="form-check-label" for="{{ form.is_technician.id_for_label }}">
+                                        {{ form.is_technician.label }} - Can view and manage assigned repairs
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    {{ form.is_secretary }}
+                                    <label class="form-check-label" for="{{ form.is_secretary.id_for_label }}">
+                                        {{ form.is_secretary.label }} - Can create customers and repairs
+                                    </label>
+                                </div>
+
+                                <div class="form-check mb-2">
+                                    {{ form.is_staff }}
+                                    <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">
+                                        {{ form.is_staff.label }} - Can manage all repairs and create receipts
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Account Status -->
+                        <div class="card bg-light border-0 mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <i class="bi bi-toggle2-on"></i> Account Status
+                                </h6>
+                                
+                                <div class="form-check mb-2">
+                                    {{ form.is_active }}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        {{ form.is_active.label }} - Uncheck to deactivate account
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Change Password Section -->
+                        <div class="card border-warning border-0 bg-warning bg-opacity-10 mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <i class="bi bi-key"></i> Change Password <small class="text-muted fw-normal">(leave blank to keep existing)</small>
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label for="new_password" class="form-label">New Password</label>
+                                        <input type="password" name="new_password" id="new_password"
+                                               class="form-control" placeholder="Enter new password (min 6 chars)">
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <label for="new_password_confirm" class="form-label">Confirm Password</label>
+                                        <input type="password" name="new_password_confirm" id="new_password_confirm"
+                                               class="form-control" placeholder="Repeat new password">
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> Only fill this in if you want to change the password.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Save Changes
+                            </button>
+                            <a href="{% url 'repair_shop:user_list' %}" class="btn btn-secondary btn-lg">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- User Information -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body text-muted">
+                    <small>
+                        <i class="bi bi-calendar"></i> Account created: {{ user_obj.created_at|date:"M d, Y H:i" }}<br>
+                        <i class="bi bi-arrow-clockwise"></i> Last updated: {{ user_obj.updated_at|date:"M d, Y H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

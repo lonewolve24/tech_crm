@@ -1,0 +1,144 @@
+{% extends 'repair_shop/base.html' %}
+{% load static %}
+
+{% block title %}Update Repair Status{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-arrow-repeat"></i> Update Repair Status
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Repair Information -->
+                    <div class="mb-4">
+                        <h5>Repair Information</h5>
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Transaction Code:</th>
+                                <td><code>{{ transaction.code }}</code></td>
+                            </tr>
+                            <tr>
+                                <th>Gadget:</th>
+                                <td><strong>{{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>Customer:</th>
+                                <td>{{ transaction.gadget.customer.get_full_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Current Status:</th>
+                                <td>
+                                    <span class="badge 
+                                        {% if transaction.status == 'Pending' %}bg-warning text-dark
+                                        {% elif transaction.status == 'In Progress' %}bg-info
+                                        {% elif transaction.status == 'Completed' %}bg-success
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ transaction.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Brought In:</th>
+                                <td>{{ transaction.brought_in_date|date:"M d, Y H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Status Update Form -->
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">
+                                <strong>Select New Status:</strong>
+                            </label>
+                            <select name="status" id="status" class="form-select form-select-lg" required>
+                                <option value="">-- Select Status --</option>
+                                <option value="Pending" {% if transaction.status == 'Pending' %}selected{% endif %}>
+                                    Pending - Not started yet
+                                </option>
+                                <option value="In Progress" {% if transaction.status == 'In Progress' %}selected{% endif %}>
+                                    In Progress - Currently working on it
+                                </option>
+                                <option value="Completed" {% if transaction.status == 'Completed' %}selected{% endif %}>
+                                    Completed - Repair finished ✅
+                                </option>
+                            </select>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> 
+                                When you mark as "Completed", the repair will appear in the admin dashboard as done.
+                            </small>
+                        </div>
+
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-lightbulb"></i>
+                            <strong>Tip:</strong> Make sure you've added all repair logs with costs before marking as completed.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'repair_shop:technician_dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Update Status
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Repair Logs Summary -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-check"></i> Repair Logs Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if transaction.repair_logs.all %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Issue</th>
+                                        <th>Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in transaction.repair_logs.all %}
+                                        <tr>
+                                            <td>{{ log.created_at|date:"M d, Y" }}</td>
+                                            <td>{{ log.issue_description|truncatewords:10 }}</td>
+                                            <td><strong>D{{ log.repair_cost|floatformat:2 }}</strong></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-primary">
+                                        <th colspan="2">Total Cost:</th>
+                                        <th><strong>D{{ transaction.total_cost|floatformat:2 }}</strong></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <a href="{% url 'repair_shop:add_repair_log' transaction.id %}" class="btn btn-sm btn-outline-primary mt-2">
+                            <i class="bi bi-plus"></i> Add Another Repair Log
+                        </a>
+                    {% else %}
+                        <p class="text-muted">No repair logs added yet.</p>
+                        <a href="{% url 'repair_shop:add_repair_log' transaction.id %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus"></i> Add First Repair Log
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

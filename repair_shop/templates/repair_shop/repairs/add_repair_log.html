@@ -1,7 +1,7 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}{% if log %}Edit{% else %}Add{% endif %} Repair Log - Tech CRM{% endblock %}
+{% block title %}{% if log %}Edit{% else %}Add{% endif %} Repair Log - Bayo Electronics{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -26,23 +26,15 @@
                         <p class="mb-0"><strong>Technician:</strong> {{ transaction.technician.get_full_name }}</p>
                     </div>
 
-                    <div class="row">
-                        <!-- Repair Date -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.repair_date.id_for_label }}" class="form-label">
-                                <i class="bi bi-calendar"></i> Repair Date
-                            </label>
-                            {{ form.repair_date }}
-                            <small class="form-text text-muted">{% if log %}Auto-filled{% else %}Automatically set to today{% endif %}</small>
-                            {% if form.repair_date.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.repair_date.errors }}</div>
-                            {% endif %}
-                        </div>
+                    <div class="alert alert-light border mb-3">
+                        <small class="text-muted"><i class="bi bi-calendar-check"></i> Repair date is automatically set to today.</small>
+                    </div>
 
+                    <div class="row">
                         <!-- Repair Cost -->
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.repair_cost.id_for_label }}" class="form-label">
-                                <i class="bi bi-currency-dollar"></i> Repair Cost (₵) *
+                                <i class="bi bi-currency-dollar"></i> Repair Cost (D) *
                             </label>
                             {{ form.repair_cost }}
                             {% if form.repair_cost.errors %}

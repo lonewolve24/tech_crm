@@ -1,10 +1,225 @@
 from pyexpat import model
 from django import forms
-from .models import Customer, Gadget, GadgetRepairTransaction, GadgetRepairLog, GadgetTransactionReceipt,MyUser
+from .models import Customer, Gadget, GadgetRepairTransaction, GadgetRepairLog, GadgetTransactionReceipt, MyUser, Payment
 from django.forms import ModelForm
 from django.utils.translation import gettext as _
 
 
+# ============================================
+# USER MANAGEMENT FORMS
+# ============================================
+
+class UserCreationForm(ModelForm):
+    """Form for creating new users"""
+    password1 = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter password',
+            'required': True,
+        })
+    )
+    password2 = forms.CharField(
+        label='Confirm Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirm password',
+            'required': True,
+        })
+    )
+
+    class Meta:
+        model = MyUser
+        fields = ['email', 'username', 'first_name', 'last_name', 'is_technician', 'is_secretary', 'is_staff']
+        labels = {
+            'email': _('Email Address'),
+            'username': _('Username'),
+            'first_name': _('First Name'),
+            'last_name': _('Last Name'),
+            'is_technician': _('Is Technician?'),
+            'is_secretary': _('Is Secretary?'),
+            'is_staff': _('Is Staff/Manager?'),
+        }
+        widgets = {
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'user@example.com',
+                'required': True,
+            }),
+            'username': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter unique username',
+                'required': True,
+            }),
+            'first_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'John',
+                'required': True,
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Doe',
+                'required': True,
+            }),
+            'is_technician': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+            'is_secretary': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+            'is_staff': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+        }
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get('password1')
+        password2 = self.cleaned_data.get('password2')
+        
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError(_('Passwords do not match'))
+        
+        if password1 and len(password1) < 6:
+            raise forms.ValidationError(_('Password must be at least 6 characters'))
+        
+        return password2
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data['password1'])
+        user.is_active = True
+        if commit:
+            user.save()
+        return user
+
+
+class UserEditForm(ModelForm):
+    """Form for editing existing users (without password)"""
+    
+    class Meta:
+        model = MyUser
+        fields = ['email', 'username', 'first_name', 'last_name', 'is_technician', 'is_secretary', 'is_staff', 'is_active']
+        labels = {
+            'email': _('Email Address'),
+            'username': _('Username'),
+            'first_name': _('First Name'),
+            'last_name': _('Last Name'),
+            'is_technician': _('Is Technician?'),
+            'is_secretary': _('Is Secretary?'),
+            'is_staff': _('Is Staff/Manager?'),
+            'is_active': _('Is Active?'),
+        }
+        widgets = {
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'user@example.com',
+            }),
+            'username': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter username',
+            }),
+            'first_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'John',
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Doe',
+            }),
+            'is_technician': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+            'is_secretary': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+            'is_staff': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+        }
+
+
+class UserProfileForm(ModelForm):
+    """Form for users to edit their own profile"""
+    
+    class Meta:
+        model = MyUser
+        fields = ['email', 'first_name', 'last_name']
+        labels = {
+            'email': _('Email Address'),
+            'first_name': _('First Name'),
+            'last_name': _('Last Name'),
+        }
+        widgets = {
+            'email': forms.EmailInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'user@example.com',
+            }),
+            'first_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'John',
+            }),
+            'last_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Doe',
+            }),
+        }
+
+
+class UserPasswordChangeForm(forms.Form):
+    """Form for changing user password"""
+    current_password = forms.CharField(
+        label='Current Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter current password',
+            'required': True,
+        })
+    )
+    new_password = forms.CharField(
+        label='New Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter new password',
+            'required': True,
+        })
+    )
+    confirm_password = forms.CharField(
+        label='Confirm New Password',
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirm new password',
+            'required': True,
+        })
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_current_password(self):
+        current_password = self.cleaned_data.get('current_password')
+        if not self.user.check_password(current_password):
+            raise forms.ValidationError(_('Current password is incorrect'))
+        return current_password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get('new_password')
+        confirm_password = cleaned_data.get('confirm_password')
+        
+        if new_password and confirm_password and new_password != confirm_password:
+            raise forms.ValidationError(_('New passwords do not match'))
+        
+        if new_password and len(new_password) < 6:
+            raise forms.ValidationError(_('Password must be at least 6 characters'))
+        
+        return cleaned_data
+
+
+# ============================================
 
 class CustomerForm(ModelForm):
     class Meta:
@@ -151,6 +366,17 @@ class GadgetForm(ModelForm):
         }
 
 class GadgetRepairTransactionForm(ModelForm):
+    # Add customer field (not in model, just for filtering gadgets)
+    customer = forms.ModelChoiceField(
+        queryset=Customer.objects.all().order_by('first_name', 'last_name'),
+        required=False,
+        label=_("Select Customer"),
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+            'id': 'id_customer_filter',
+        }),
+        help_text=_("Select a customer first to see their gadgets")
+    )
 
     class Meta:
         model = GadgetRepairTransaction
@@ -164,6 +390,7 @@ class GadgetRepairTransactionForm(ModelForm):
             'gadget': forms.Select(attrs={
                 'class': 'form-select',
                 'required': True,
+                'id': 'id_gadget',
             }), 
             'technician': forms.Select(attrs={
                 'class': 'form-select',
@@ -185,15 +412,61 @@ class GadgetRepairTransactionForm(ModelForm):
                 'required': _("Please select a status for the repair transaction." )
             }
         }
+
+    def __init__(self, *args, **kwargs):
+        customer_id = kwargs.pop('customer_id', None)
+        gadget_id = kwargs.pop('gadget_id', None)
+        super().__init__(*args, **kwargs)
+        
+        # Set initial customer if provided
+        if customer_id:
+            try:
+                customer = Customer.objects.get(id=customer_id)
+                self.fields['customer'].initial = customer
+                # Filter gadgets to this customer's gadgets
+                self.fields['gadget'].queryset = Gadget.objects.filter(
+                    customer=customer
+                ).order_by('gadget_brand', 'gadget_model')
+            except Customer.DoesNotExist:
+                pass
+        
+        # Set initial gadget if provided (from URL param)
+        if gadget_id:
+            try:
+                gadget = Gadget.objects.get(id=gadget_id)
+                self.fields['gadget'].initial = gadget
+                # Also set customer to match the gadget's customer
+                if gadget.customer:
+                    self.fields['customer'].initial = gadget.customer
+                    self.fields['gadget'].queryset = Gadget.objects.filter(
+                        customer=gadget.customer
+                    ).order_by('gadget_brand', 'gadget_model')
+            except Gadget.DoesNotExist:
+                pass
+        
+        # If no customer/gadget provided, show all gadgets (backward compatibility)
+        if not customer_id and not gadget_id:
+            self.fields['gadget'].queryset = Gadget.objects.all().order_by(
+                'customer__first_name', 'customer__last_name', 'gadget_brand', 'gadget_model'
+            )
+
     def clean(self):
         cleaned_data = super().clean()
         gadget = self.cleaned_data.get('gadget')
         technician = self.cleaned_data.get('technician')
+        customer = self.cleaned_data.get('customer')
+        
         if not gadget:
             raise forms.ValidationError(_("Please select a gadget for the repair transaction."))
 
         if not technician:
             raise forms.ValidationError(_("Please Assign a Technician to the repair transaction"))
+        
+        # Validate that selected gadget belongs to selected customer (if customer was selected)
+        if customer and gadget.customer != customer:
+            raise forms.ValidationError(
+                _("The selected gadget does not belong to the selected customer.")
+            )
         
         # Only check for active repairs when CREATING a new repair (not when editing)
         # self.instance.pk is None when creating, has a value when editing
@@ -290,7 +563,7 @@ class GadgetTransactionReceiptForm(ModelForm):
         model = GadgetTransactionReceipt
         fields = ['amount_paid']
         labels = {
-            'amount_paid': _("Amount Paid (₵)"),
+            'amount_paid': _("Amount Paid (D)"),
         }
         widgets = {
             'amount_paid': forms.NumberInput(attrs={
@@ -315,4 +588,60 @@ class GadgetTransactionReceiptForm(ModelForm):
             raise forms.ValidationError(_("Amount must be greater than 0"))
         
         return amount_paid
+
+
+class PaymentForm(ModelForm):
+    """Form for recording a payment (cash or mobile money) against a repair."""
+
+    class Meta:
+        model = Payment
+        fields = ['payment_type', 'amount', 'mobile_provider', 'mobile_number', 'notes']
+        labels = {
+            'payment_type': _('Payment Method'),
+            'amount': _('Amount Paid (D)'),
+            'mobile_provider': _('Mobile Provider'),
+            'mobile_number': _('Mobile Number / Account'),
+            'notes': _('Notes (optional)'),
+        }
+        widgets = {
+            'payment_type': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True,
+                'id': 'id_payment_type',
+            }),
+            'amount': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': '0.00',
+                'step': '0.01',
+                'min': '0.01',
+                'required': True,
+            }),
+            'mobile_provider': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. Africell, QMoney, Wave',
+            }),
+            'mobile_number': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Sender phone or account number',
+            }),
+            'notes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Optional notes about this payment',
+            }),
+        }
+
+    def clean_amount(self):
+        amount = self.cleaned_data.get('amount')
+        if amount is not None and amount <= 0:
+            raise forms.ValidationError(_("Amount must be greater than 0."))
+        return amount
+
+    def clean(self):
+        cleaned_data = super().clean()
+        payment_type = cleaned_data.get('payment_type')
+        mobile_number = cleaned_data.get('mobile_number', '').strip()
+        if payment_type == Payment.MOBILE_MONEY and not mobile_number:
+            self.add_error('mobile_number', _("Mobile number is required for Mobile Money payments."))
+        return cleaned_data
     

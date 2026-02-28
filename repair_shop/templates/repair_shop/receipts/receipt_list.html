@@ -1,7 +1,7 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}Transaction Receipts - Tech CRM{% endblock %}
+{% block title %}Transaction Receipts - Bayo Electronics{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -69,7 +69,7 @@
                             </a>
                         </td>
                         <td>
-                            <strong class="text-success">₵{{ receipt.amount_paid }}</strong>
+                            <strong class="text-success">D{{ receipt.amount_paid }}</strong>
                         </td>
                         <td>{{ receipt.issued_date|date:"M d, Y" }}</td>
                         <td>

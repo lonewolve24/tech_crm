@@ -1,76 +1,128 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}Create Receipt - Tech CRM{% endblock %}
+{% block title %}Generate Receipt — {{ transaction.code }} - Bayo Electronics{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1><i class="bi bi-receipt"></i> Create Transaction Receipt</h1>
+    <h1><i class="bi bi-receipt"></i> Generate Receipt</h1>
+    <a href="{% url 'repair_shop:repair_transaction_detail' transaction.id %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Repair
+    </a>
 </div>
 
 <div class="row">
-    <div class="col-lg-6 offset-lg-3">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">{{ transaction.transaction_code }}</h5>
+    <div class="col-lg-7">
+
+        <!-- Repair Summary -->
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-light fw-bold">
+                <i class="bi bi-info-circle"></i> Repair Summary — <code>{{ transaction.code }}</code>
             </div>
             <div class="card-body">
-                <!-- Transaction Summary -->
-                <div class="bg-light p-3 mb-4 rounded">
-                    <h6 class="mb-2"><i class="bi bi-info-circle"></i> Repair Summary</h6>
-                    <p class="mb-1"><strong>Gadget:</strong> {{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}</p>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <p class="mb-1"><strong>Device:</strong> {{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}</p>
                     <p class="mb-1"><strong>Customer:</strong> {{ transaction.gadget.customer.first_name }} {{ transaction.gadget.customer.last_name }}</p>
-                    <p class="mb-1"><strong>Technician:</strong> {{ transaction.technician.get_full_name }}</p>
-                    <p class="mb-1"><strong>Repair Logs:</strong> {{ transaction.repair_logs.count }}</p>
-                    <p class="mb-0"><strong>Total Repair Cost:</strong> <span class="text-primary h5">₵{{ total_cost }}</span></p>
+                        <p class="mb-0"><strong>Technician:</strong> {{ transaction.technician.get_full_name|default:"N/A" }}</p>
+                    </div>
+                    <div class="col-6 text-end">
+                        <p class="mb-1 text-muted small">Total Repair Cost</p>
+                        <p class="fs-4 fw-bold text-dark mb-1">D{{ total_cost|floatformat:2 }}</p>
+                        <p class="mb-1 text-muted small">Total Paid</p>
+                        <p class="fs-4 fw-bold text-success mb-0">D{{ total_paid|floatformat:2 }}</p>
+                    </div>
                 </div>
-
-                <!-- Form -->
-                <form method="post" novalidate>
-                    {% csrf_token %}
-                    
-                    <!-- Amount Paid -->
-                    <div class="mb-3">
-                        <label for="{{ form.amount_paid.id_for_label }}" class="form-label">
-                            <i class="bi bi-currency-dollar"></i> Amount Paid (₵) *
-                        </label>
-                        {{ form.amount_paid }}
-                        <small class="form-text text-muted">Must match the total repair cost of ₵{{ total_cost }}</small>
-                        {% if form.amount_paid.errors %}
-                        <div class="alert alert-danger mt-2">{{ form.amount_paid.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Form Errors -->
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger" role="alert">
-                        <h5 class="alert-heading">Form Errors</h5>
-                        {% for error in form.non_field_errors %}
-                        <p class="mb-0">{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-
-                    <!-- Buttons -->
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle"></i> Create Receipt
-                        </button>
-                        <a href="{% url 'repair_shop:repair_transaction_detail' transaction.id %}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Cancel
-                        </a>
-                    </div>
-                </form>
             </div>
         </div>
 
-        <!-- Info Alert -->
-        <div class="alert alert-info mt-4" role="alert">
-            <i class="bi bi-info-circle"></i> 
-            <strong>Important:</strong> The amount paid must exactly match the total repair cost. Once created, the receipt cannot be modified.
+        <!-- Payments List -->
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header fw-bold">
+                <i class="bi bi-wallet2"></i> Payments Recorded
+                <span class="badge bg-success ms-2">{{ payments|length }} payment(s)</span>
+            </div>
+            <div class="card-body p-0">
+                {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Method</th>
+                                <th>Amount</th>
+                                <th>Provider / Number</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in payments %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% if p.payment_type == 'CASH' %}
+                                    <span class="badge bg-secondary">Cash</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark">Mobile Money</span>
+                    {% endif %}
+                                </td>
+                                <td><strong class="text-success">D{{ p.amount|floatformat:2 }}</strong></td>
+                                <td>
+                                    {% if p.mobile_provider %}{{ p.mobile_provider }}{% endif %}
+                                    {% if p.mobile_number %} / {{ p.mobile_number }}{% endif %}
+                                    {% if not p.mobile_provider and not p.mobile_number %}—{% endif %}
+                                </td>
+                                <td><small>{{ p.created_at|date:"M d, Y" }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    </div>
+                {% else %}
+                <div class="p-3 text-muted"><i class="bi bi-exclamation-circle"></i> No payments found.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Generate Button or Warning -->
+        {% if is_fully_paid %}
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle-fill"></i>
+            <strong>Fully Paid!</strong> Total of D{{ total_paid|floatformat:2 }} received. Ready to generate receipt.
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-lg w-100">
+                <i class="bi bi-receipt-cutoff"></i> Generate & Save Receipt
+            </button>
+        </form>
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <strong>Outstanding Balance: D{{ total_due|floatformat:2 }}</strong>
+            — Receipt can only be generated once fully paid.
+        </div>
+        <a href="{% url 'repair_shop:add_payment' transaction.id %}" class="btn btn-success btn-lg w-100">
+            <i class="bi bi-cash-coin"></i> Record Payment (D{{ total_due|floatformat:2 }} remaining)
+        </a>
+        {% endif %}
+
+    </div>
+
+    <!-- Side Info -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light fw-bold"><i class="bi bi-lightbulb"></i> How It Works</div>
+            <div class="card-body">
+                <ol class="ps-3 small text-muted">
+                    <li class="mb-2">Repair is <strong>marked as Completed</strong> by the technician.</li>
+                    <li class="mb-2">Staff <strong>records payment(s)</strong> — cash or mobile money — against the repair.</li>
+                    <li class="mb-2">Multiple partial payments are supported until the full amount is collected.</li>
+                    <li class="mb-2">Once <strong>fully paid</strong>, this page shows the Generate Receipt button.</li>
+                    <li class="mb-0">The generated receipt captures all payments and can be printed.</li>
+                </ol>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
-
-

@@ -1,44 +1,47 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}My Assigned Repairs - Tech CRM{% endblock %}
+{% block title %}My Assigned Repairs - Bayo Electronics{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1><i class="bi bi-tools"></i> My Assigned Repairs</h1>
+    <a href="{% url 'repair_shop:technician_dashboard' %}" class="btn btn-outline-primary">
+        <i class="bi bi-speedometer2"></i> Back to Dashboard
+    </a>
 </div>
 
 <!-- Statistics -->
 <div class="row mb-4">
     <div class="col-md-4">
-        <div class="card text-center">
+        <div class="card text-center border-0 shadow-sm">
             <div class="card-body">
-                <h3 class="text-warning">{{ stats.pending }}</h3>
-                <p class="text-muted mb-0">Pending</p>
+                <h3 class="text-warning fw-bold">{{ stats.pending }}</h3>
+                <p class="text-muted mb-0"><i class="bi bi-clock"></i> Pending</p>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-center">
+        <div class="card text-center border-0 shadow-sm">
             <div class="card-body">
-                <h3 class="text-info">{{ stats.in_progress }}</h3>
-                <p class="text-muted mb-0">In Progress</p>
+                <h3 class="text-info fw-bold">{{ stats.in_progress }}</h3>
+                <p class="text-muted mb-0"><i class="bi bi-hourglass-split"></i> In Progress</p>
             </div>
         </div>
     </div>
     <div class="col-md-4">
-        <div class="card text-center">
+        <div class="card text-center border-0 shadow-sm">
             <div class="card-body">
-                <h3 class="text-success">{{ stats.completed }}</h3>
-                <p class="text-muted mb-0">Completed</p>
+                <h3 class="text-success fw-bold">{{ stats.completed }}</h3>
+                <p class="text-muted mb-0"><i class="bi bi-check-circle"></i> Completed</p>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Repairs Table -->
-<div class="card">
-    <div class="card-header">
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-primary bg-opacity-10 border-bottom border-primary">
         <h5 class="mb-0">
             <i class="bi bi-table"></i> Your Repairs
             {% if repairs %}
@@ -46,10 +49,10 @@
             {% endif %}
         </h5>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         {% if repairs %}
         <div class="table-responsive">
-            <table class="table table-hover table-striped">
+            <table class="table table-hover table-striped mb-0">
                 <thead class="table-light">
                     <tr>
                         <th>Code</th>
@@ -65,43 +68,52 @@
                 <tbody>
                     {% for repair in repairs %}
                     <tr>
-                        <td><strong>{{ repair.transaction_code }}</strong></td>
-                        <td>{{ repair.gadget.gadget_brand }} {{ repair.gadget.gadget_model }}</td>
+                        <td><strong><code>{{ repair.code }}</code></strong></td>
                         <td>
-                            <a href="{% url 'repair_shop:customer_detail' repair.gadget.customer.id %}">
-                                {{ repair.gadget.customer.first_name }} {{ repair.gadget.customer.last_name }}
-                            </a>
+                            <strong>{{ repair.gadget.gadget_brand }} {{ repair.gadget.gadget_model }}</strong>
+                            <br><small class="text-muted">{{ repair.gadget.get_gadget_type_display }}</small>
                         </td>
                         <td>
-                            {% if repair.status == 'PENDING' %}
-                                <span class="badge bg-warning">Pending</span>
-                            {% elif repair.status == 'IN_PROGRESS' %}
+                            {{ repair.gadget.customer.first_name }} {{ repair.gadget.customer.last_name }}
+                        </td>
+                        <td>
+                            {% if repair.status == 'Pending' %}
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            {% elif repair.status == 'In Progress' %}
                                 <span class="badge bg-info">In Progress</span>
-                            {% elif repair.status == 'COMPLETED' %}
+                            {% elif repair.status == 'Completed' %}
                                 <span class="badge bg-success">Completed</span>
                             {% else %}
                                 <span class="badge bg-secondary">{{ repair.status }}</span>
                             {% endif %}
                         </td>
-                        <td>{{ repair.brought_in_date|date:"M d, Y" }}</td>
+                        <td><small>{{ repair.brought_in_date|date:"M d, Y" }}</small></td>
                         <td>
-                            <span class="badge bg-primary">{{ repair.repair_logs.count }}</span>
+                            <span class="badge bg-secondary">{{ repair.repair_logs.count }}</span>
                         </td>
-                        <td>₵{{ repair.total_cost }}</td>
+                        <td><strong>D{{ repair.total_cost|floatformat:2 }}</strong></td>
                         <td>
-                            <!-- View -->
-                            <a href="{% url 'repair_shop:repair_transaction_detail' repair.id %}" 
-                               class="btn btn-sm btn-info" title="View Details">
-                                <i class="bi bi-eye"></i>
-                            </a>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <!-- View Details -->
+                                <a href="{% url 'repair_shop:repair_transaction_detail' repair.id %}" 
+                                   class="btn btn-outline-secondary" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
 
-                            <!-- Add Log -->
-                            {% if repair.status != 'COMPLETED' %}
-                            <a href="{% url 'repair_shop:add_repair_log' repair.id %}" 
-                               class="btn btn-sm btn-success" title="Add Log">
-                                <i class="bi bi-plus-circle"></i>
-                            </a>
-                            {% endif %}
+                                <!-- Add Log (only if not completed) -->
+                                {% if repair.status != 'Completed' %}
+                                <a href="{% url 'repair_shop:add_repair_log' repair.id %}" 
+                                   class="btn btn-outline-primary" title="Add Repair Log">
+                                    <i class="bi bi-plus-circle"></i>
+                                </a>
+
+                                <!-- Update Status -->
+                                <a href="{% url 'repair_shop:technician_update_status' repair.id %}" 
+                                   class="btn btn-outline-success" title="Update Status">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </a>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -109,7 +121,7 @@
             </table>
         </div>
         {% else %}
-        <div class="alert alert-info" role="alert">
+        <div class="alert alert-info m-3" role="alert">
             <i class="bi bi-info-circle"></i>
             <strong>No assigned repairs.</strong> Check back later or contact your manager.
         </div>
@@ -117,5 +129,3 @@
     </div>
 </div>
 {% endblock %}
-
-

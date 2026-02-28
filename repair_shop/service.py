@@ -1,4 +1,5 @@
-from .models import Customer, Gadget, GadgetRepairTransaction, GadgetRepairLog, GadgetTransactionReceipt, MyUser
+from django.db import models
+from .models import Customer, Gadget, GadgetRepairTransaction, GadgetRepairLog, GadgetTransactionReceipt, MyUser, Notification
 
 
 
@@ -200,18 +201,15 @@ class GadgetRepairLogService:
 class GadgetTransactionReceiptService:
 
     @staticmethod
-    def create_transaction_receipt(transaction_id, amount, payment_method):
+    def create_transaction_receipt(transaction_id):
         """
-        Create a transaction receipt.
-        
-        Validations:
-        1. Repair transaction status must be COMPLETED
-        2. Amount paid must EQUAL the total repair cost
+        Create a receipt once the repair is Completed AND fully paid.
+        The amount_paid is auto-calculated from all recorded Payment objects.
         """
         try:
             transaction_obj = GadgetRepairTransaction.objects.get(id=transaction_id)
             
-            # Validation 1: Check if repair is COMPLETED
+            # Validation 1: repair must be COMPLETED
             if transaction_obj.status != GadgetRepairTransaction.COMPLETED:
                 return {
                     "success": False,
@@ -219,25 +217,33 @@ class GadgetTransactionReceiptService:
                     "transaction_receipt": None
                 }
             
-            # Validation 2: Check if amount matches total repair cost
-            total_repair_cost = transaction_obj.total_cost
-            
-            if float(amount) != float(total_repair_cost):
+            # Validation 2: must be fully paid
+            if not transaction_obj.is_fully_paid:
+                due = transaction_obj.total_due
                 return {
                     "success": False,
-                    "message": f"Amount mismatch! Expected {total_repair_cost}, but received {amount}",
+                    "message": f"Cannot create receipt. Outstanding balance: D{due:.2f}",
                     "transaction_receipt": None
                 }
             
-            # Both validations passed - create receipt
+            # Validation 3: prevent duplicate receipts
+            existing = transaction_obj.gadgettransactionreceipt_set.first()
+            if existing:
+                return {
+                    "success": False,
+                    "message": f"Receipt {existing.receipt_number} already exists for this repair.",
+                    "transaction_receipt": existing
+                }
+
+            # Create receipt — amount_paid = total payments received
             transaction_receipt_obj = GadgetTransactionReceipt.objects.create(
                 transaction=transaction_obj,
-                amount_paid=amount
+                amount_paid=transaction_obj.total_paid
             )
             
             return {
                 "success": True,
-                "message": f"Transaction receipt created successfully with code: {transaction_receipt_obj.receipt_number}",
+                "message": f"Receipt {transaction_receipt_obj.receipt_number} created successfully.",
                 "transaction_receipt": transaction_receipt_obj
             }
         
@@ -247,15 +253,81 @@ class GadgetTransactionReceiptService:
                 "message": "Repair transaction not found",
                 "transaction_receipt": None
             }
-        except ValueError:
-            return {
-                "success": False,
-                "message": "Invalid amount entered. Please enter a valid number.",
-                "transaction_receipt": None
-            }
         except Exception as e:
             return {
                 "success": False,
                 "message": str(e),
                 "transaction_receipt": None
             }
+
+
+class NotificationService:
+    """Helper to create in-app notifications."""
+
+    @staticmethod
+    def notify_technician_assigned(transaction):
+        """Notify technician when a repair is assigned to them."""
+        if not transaction.technician:
+            return
+        Notification.objects.create(
+            recipient=transaction.technician,
+            title="New Repair Assigned",
+            message=(
+                f"You have been assigned a new repair: "
+                f"{transaction.gadget.gadget_brand} {transaction.gadget.gadget_model} "
+                f"(Code: {transaction.code})"
+            ),
+            notification_type=Notification.REPAIR_ASSIGNED,
+            repair=transaction,
+        )
+
+    @staticmethod
+    def notify_staff_repair_completed(transaction):
+        """Notify all staff/admin when a repair is marked completed."""
+        staff_users = MyUser.objects.filter(
+            is_active=True
+        ).filter(
+            models.Q(is_staff=True) | models.Q(is_superuser=True)
+        )
+        notifications = [
+            Notification(
+                recipient=user,
+                title="Repair Completed",
+                message=(
+                    f"Repair {transaction.code} has been marked as completed by "
+                    f"{transaction.technician.get_full_name() if transaction.technician else 'N/A'}. "
+                    f"Device: {transaction.gadget.gadget_brand} {transaction.gadget.gadget_model}."
+                ),
+                notification_type=Notification.REPAIR_COMPLETED,
+                repair=transaction,
+            )
+            for user in staff_users
+        ]
+        if notifications:
+            Notification.objects.bulk_create(notifications)
+
+    @staticmethod
+    def notify_staff_payment_pending(transaction):
+        """Notify staff/admin when a repair is completed but no payment has been made."""
+        staff_users = MyUser.objects.filter(
+            is_active=True
+        ).filter(
+            models.Q(is_staff=True) | models.Q(is_superuser=True)
+        )
+        notifications = [
+            Notification(
+                recipient=user,
+                title="Payment Pending",
+                message=(
+                    f"⚠️ Repair {transaction.code} is COMPLETED but payment of "
+                    f"D{transaction.total_cost:.2f} has NOT been received yet. "
+                    f"Customer: {transaction.gadget.customer}. "
+                    f"Device: {transaction.gadget.gadget_brand} {transaction.gadget.gadget_model}."
+                ),
+                notification_type=Notification.PAYMENT_PENDING,
+                repair=transaction,
+            )
+            for user in staff_users
+        ]
+        if notifications:
+            Notification.objects.bulk_create(notifications)

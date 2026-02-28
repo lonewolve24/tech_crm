@@ -1,91 +1,171 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}Repair Transactions - Tech CRM{% endblock %}
+{% block title %}Repair Transactions - Bayo Electronics{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1><i class="bi bi-tools"></i> Repair Transactions</h1>
+
+<!-- ════════════════════════════════════════════
+     PAGE HEADER
+════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-0 page-title">Repair Transactions</h4>
+        <p class="text-muted small mb-0">Manage and track all device repair jobs</p>
+    </div>
     {% if perms.repair_shop.add_gadgetrepairtransaction %}
-    <a href="{% url 'repair_shop:create_repair_transaction' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> New Repair
+    <a href="{% url 'repair_shop:create_repair_transaction' %}" class="btn btn-brand-create btn-sm px-3">
+        <i class="bi bi-plus-lg me-1"></i> New Repair
     </a>
     {% endif %}
 </div>
 
-<!-- Statistics -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-primary">{{ stats.total }}</h3>
-                <p class="text-muted mb-0">Total Repairs</p>
+<!-- ════════════════════════════════════════════
+     STAT CHIPS
+════════════════════════════════════════════ -->
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="?" class="stat-chip {% if not status_filter %}stat-chip-active{% endif %}">
+        <span class="stat-chip-num">{{ stats.total }}</span>
+        <span class="stat-chip-label">All</span>
+    </a>
+    <a href="?status=Pending" class="stat-chip {% if status_filter == 'Pending' %}stat-chip-warning{% endif %}">
+        <span class="stat-chip-dot" style="background:#f59e0b"></span>
+        <span class="stat-chip-num">{{ stats.pending }}</span>
+        <span class="stat-chip-label">Pending</span>
+    </a>
+    <a href="?status=In+Progress" class="stat-chip {% if status_filter == 'In Progress' %}stat-chip-info{% endif %}">
+        <span class="stat-chip-dot" style="background:#0ea5e9"></span>
+        <span class="stat-chip-num">{{ stats.in_progress }}</span>
+        <span class="stat-chip-label">In Progress</span>
+    </a>
+    <a href="?status=Completed" class="stat-chip {% if status_filter == 'Completed' %}stat-chip-success{% endif %}">
+        <span class="stat-chip-dot" style="background:#22c55e"></span>
+        <span class="stat-chip-num">{{ stats.completed }}</span>
+        <span class="stat-chip-label">Completed</span>
+    </a>
             </div>
+
+<!-- ════════════════════════════════════════════
+     DARK FILTER BAR (like screenshot)
+════════════════════════════════════════════ -->
+<form method="get" id="filterForm">
+<div class="dark-filter-bar mb-3">
+    <div class="dark-filter-inner">
+
+        <!-- Label -->
+        <span class="dark-filter-label">
+            <i class="bi bi-funnel-fill me-1"></i>Filters:
+        </span>
+
+        <!-- Search -->
+        <div class="dark-filter-field">
+            <input type="text" name="search" class="dark-filter-input" placeholder="Search code, brand, customer..." value="{{ search_query }}">
         </div>
+
+        <!-- Prev arrow -->
+        <button type="button" class="dark-filter-arrow" onclick="adjustDate(-1)" title="Previous month">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+
+        <!-- Month Select -->
+        <div class="dark-filter-field">
+            <select name="month" class="dark-filter-select" id="monthSelect">
+                <option value="">All Months</option>
+                <option value="1"  {% if selected_month == 1  %}selected{% endif %}>January</option>
+                <option value="2"  {% if selected_month == 2  %}selected{% endif %}>February</option>
+                <option value="3"  {% if selected_month == 3  %}selected{% endif %}>March</option>
+                <option value="4"  {% if selected_month == 4  %}selected{% endif %}>April</option>
+                <option value="5"  {% if selected_month == 5  %}selected{% endif %}>May</option>
+                <option value="6"  {% if selected_month == 6  %}selected{% endif %}>June</option>
+                <option value="7"  {% if selected_month == 7  %}selected{% endif %}>July</option>
+                <option value="8"  {% if selected_month == 8  %}selected{% endif %}>August</option>
+                <option value="9"  {% if selected_month == 9  %}selected{% endif %}>September</option>
+                <option value="10" {% if selected_month == 10 %}selected{% endif %}>October</option>
+                <option value="11" {% if selected_month == 11 %}selected{% endif %}>November</option>
+                <option value="12" {% if selected_month == 12 %}selected{% endif %}>December</option>
+            </select>
     </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-warning">{{ stats.pending }}</h3>
-                <p class="text-muted mb-0">Pending</p>
-            </div>
+
+        <!-- Year Select -->
+        <div class="dark-filter-field">
+            <select name="year" class="dark-filter-select" id="yearSelect">
+                <option value="">All Years</option>
+                {% for y in years %}
+                <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-info">{{ stats.in_progress }}</h3>
-                <p class="text-muted mb-0">In Progress</p>
-            </div>
+
+        <!-- Next arrow -->
+        <button type="button" class="dark-filter-arrow" onclick="adjustDate(1)" title="Next month">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+
+        <!-- Status -->
+        <div class="dark-filter-field">
+            <select name="status" class="dark-filter-select">
+                <option value="">All Statuses</option>
+                <option value="Pending"     {% if status_filter == 'Pending'     %}selected{% endif %}>Pending</option>
+                <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Completed"   {% if status_filter == 'Completed'   %}selected{% endif %}>Completed</option>
+            </select>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-success">{{ stats.completed }}</h3>
-                <p class="text-muted mb-0">Completed</p>
-            </div>
+
+        <!-- Payment -->
+        <div class="dark-filter-field">
+            <select name="payment" class="dark-filter-select">
+                <option value="">All Payments</option>
+                <option value="paid"   {% if payment_filter == 'paid'   %}selected{% endif %}>Fully Paid</option>
+                <option value="unpaid" {% if payment_filter == 'unpaid' %}selected{% endif %}>Payment Due</option>
+            </select>
         </div>
+
+        <!-- Go Button -->
+        <button type="submit" class="dark-filter-go">
+            Go
+        </button>
+
     </div>
 </div>
+</form>
 
-<!-- Search Bar -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-6">
-                <input type="text" name="search" class="form-control" placeholder="Search by code, brand, technician..." 
-                    value="{{ request.GET.search }}">
-            </div>
-            <div class="col-md-6">
-                <button type="submit" class="btn btn-info">
-                    <i class="bi bi-search"></i> Search
+<!-- Quick action buttons row -->
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="?date_from={{ today|date:'Y-m-d' }}&date_to={{ today|date:'Y-m-d' }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-calendar-event me-1"></i>Today
+    </a>
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportTable()">
+        <i class="bi bi-download me-1"></i>Export
+    </button>
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-three-dots-vertical me-1"></i>More Actions
                 </button>
-                {% if request.GET.search %}
-                <a href="{% url 'repair_shop:repair_transaction_list' %}" class="btn btn-secondary">
-                    <i class="bi bi-x-circle"></i> Clear
-                </a>
-                {% endif %}
-            </div>
-        </form>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url 'repair_shop:repair_transaction_list' %}"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset Filters</a></li>
+            <li><a class="dropdown-item" href="?payment=unpaid"><i class="bi bi-cash-stack me-2"></i>Show Unpaid Only</a></li>
+            <li><a class="dropdown-item" href="?status=Completed&payment=paid"><i class="bi bi-check-circle me-2"></i>Show Completed & Paid</a></li>
+        </ul>
     </div>
 </div>
 
-<!-- Transactions Table -->
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="bi bi-table"></i> All Repair Transactions
-            {% if transactions %}
-            <span class="badge bg-primary float-end">{{ transactions.count }} transactions</span>
-            {% endif %}
-        </h5>
+<!-- ════════════════════════════════════════════
+     TABLE
+════════════════════════════════════════════ -->
+<div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+    <div class="card-header-strip d-flex align-items-center justify-content-between px-4 py-3">
+        <span class="fw-semibold" style="font-size:.9rem;">
+            <i class="bi bi-table me-1 opacity-75"></i> All Repairs
+        </span>
+        <span class="badge rounded-pill" style="background:rgba(255,255,255,.15);font-size:.75rem;">
+            {% if transactions|length %}{{ transactions|length }}{% else %}0{% endif %} results
+        </span>
     </div>
-    <div class="card-body">
+
         {% if transactions %}
         <div class="table-responsive">
-            <table class="table table-hover table-striped">
-                <thead class="table-light">
+        <table class="table rtable mb-0" id="repairTable">
+            <thead>
                     <tr>
                         <th>Code</th>
                         <th>Gadget</th>
@@ -93,74 +173,106 @@
                         <th>Technician</th>
                         <th>Status</th>
                         <th>Brought In</th>
-                        <th>Logs</th>
-                        <th>Total Cost</th>
-                        <th>Actions</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Due</th>
+                    <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for transaction in transactions %}
                     <tr>
-                        <td><strong>{{ transaction.transaction_code }}</strong></td>
+                    <td>
+                        <span class="code-badge">{{ transaction.transaction_code }}</span>
+                    </td>
                         <td>
-                            {{ transaction.gadget.gadget_brand }} {{ transaction.gadget.gadget_model }}
+                        <div class="fw-medium lh-sm" style="font-size:.875rem;">{{ transaction.gadget.gadget_brand }}</div>
+                        <div class="text-muted" style="font-size:.75rem;">{{ transaction.gadget.gadget_model }}</div>
                         </td>
                         <td>
-                            <a href="{% url 'repair_shop:customer_detail' transaction.gadget.customer.id %}">
+                        <a href="{% url 'repair_shop:customer_detail' transaction.gadget.customer.id %}"
+                           class="text-decoration-none fw-medium link-customer" style="font-size:.875rem;">
                                 {{ transaction.gadget.customer.first_name }} {{ transaction.gadget.customer.last_name }}
                             </a>
                         </td>
-                        <td>{{ transaction.technician.username|default:"Unassigned" }}</td>
+                    <td>
+                        {% if transaction.technician %}
+                            <span class="tech-badge">{{ transaction.technician.username }}</span>
+                        {% else %}
+                            <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
                         <td>
                             {% if transaction.status == 'Pending' %}
-                                <span class="badge bg-warning">Pending</span>
+                            <span class="spill spill-pending">Pending</span>
                             {% elif transaction.status == 'In Progress' %}
-                                <span class="badge bg-info">In Progress</span>
+                            <span class="spill spill-inprog">In Progress</span>
                             {% elif transaction.status == 'Completed' %}
-                                <span class="badge bg-success">Completed</span>
+                            <span class="spill spill-done">Completed</span>
                             {% else %}
-                                <span class="badge bg-secondary">{{ transaction.status }}</span>
+                            <span class="spill spill-other">{{ transaction.status }}</span>
                             {% endif %}
                         </td>
-                        <td>{{ transaction.brought_in_date|date:"M d, Y" }}</td>
-                        <td>
-                            <span class="badge bg-primary">{{ transaction.repair_logs.count }}</span>
+                    <td class="text-muted" style="font-size:.8rem; white-space:nowrap;">
+                        {{ transaction.brought_in_date|date:"M d, Y" }}
+                    </td>
+                    <td class="fw-semibold" style="font-size:.875rem;">
+                        D{{ transaction.total_cost|floatformat:2 }}
+                    </td>
+                    <td style="font-size:.875rem;">
+                        <span class="{% if transaction.total_paid > 0 %}text-success fw-semibold{% else %}text-muted{% endif %}">
+                            D{{ transaction.total_paid|floatformat:2 }}
+                        </span>
+                    </td>
+                    <td style="font-size:.875rem;">
+                        {% if not transaction.has_price %}
+                            <span class="spill" style="background:#f3f4f6; color:#6b7280; font-size:.7rem;">
+                                <i class="bi bi-dash-circle me-1"></i>Not Priced
+                            </span>
+                        {% elif transaction.is_fully_paid %}
+                            <span class="spill spill-done" style="font-size:.7rem;">
+                                <i class="bi bi-check-lg me-1"></i>Paid
+                            </span>
+                        {% else %}
+                            <span class="fw-semibold text-danger">D{{ transaction.total_due|floatformat:2 }}</span>
+                        {% endif %}
                         </td>
-                        <td>₵{{ transaction.total_cost }}</td>
                         <td>
-                            <!-- View -->
+                        <div class="d-flex gap-1 justify-content-center">
                             <a href="{% url 'repair_shop:repair_transaction_detail' transaction.id %}" 
-                               class="btn btn-sm btn-info" title="View Details">
+                               class="act-btn act-btn-view" title="View Details">
                                 <i class="bi bi-eye"></i>
                             </a>
-
-                            <!-- Edit -->
                             {% if perms.repair_shop.change_gadgetrepairtransaction %}
                             <a href="{% url 'repair_shop:update_repair_transaction' transaction.id %}" 
-                               class="btn btn-sm btn-warning" title="Edit">
+                               class="act-btn act-btn-edit" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
-
-                            <!-- Reassign Technician -->
                             <a href="{% url 'repair_shop:reassign_technician' transaction.id %}" 
-                               class="btn btn-sm btn-secondary" title="Reassign Technician">
+                               class="act-btn act-btn-reassign" title="Reassign Technician">
                                 <i class="bi bi-person-check"></i>
                             </a>
                             {% endif %}
-
-                            <!-- Create Receipt (only if completed) -->
                             {% if perms.repair_shop.add_gadgettransactionreceipt %}
                                 {% if transaction.status == 'Completed' %}
+                                    {% if transaction.is_fully_paid %}
                                 <a href="{% url 'repair_shop:create_transaction_receipt' transaction.id %}" 
-                                   class="btn btn-sm btn-success" title="Create Receipt">
+                                       class="act-btn act-btn-receipt" title="Create Receipt">
                                     <i class="bi bi-receipt"></i>
                                 </a>
+                                    {% else %}
+                                    <a href="{% url 'repair_shop:add_payment' transaction.id %}"
+                                       class="act-btn act-btn-pay" title="Record Payment">
+                                        <i class="bi bi-cash-coin"></i>
+                                    </a>
+                                    {% endif %}
                                 {% else %}
-                                <button class="btn btn-sm btn-success" disabled title="Repair must be completed first">
+                                <button class="act-btn act-btn-disabled" disabled title="Complete repair first">
                                     <i class="bi bi-receipt"></i>
                                 </button>
                                 {% endif %}
                             {% endif %}
+                        </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -168,15 +280,312 @@
             </table>
         </div>
         {% else %}
-        <div class="alert alert-info" role="alert">
-            <i class="bi bi-info-circle"></i>
-            <strong>No repair transactions found.</strong>
-            {% if perms.repair_shop.add_gadgetrepairtransaction %}
-            <a href="{% url 'repair_shop:create_repair_transaction' %}" class="alert-link">Create one now.</a>
-            {% endif %}
+    <div class="text-center py-5 px-3">
+        <div class="empty-state-icon mb-3">
+            <i class="bi bi-clipboard-x"></i>
         </div>
+        <h6 class="fw-semibold mb-1">No repairs found</h6>
+        <p class="text-muted small mb-3">Try adjusting the filters or create a new repair job.</p>
+        {% if perms.repair_shop.add_gadgetrepairtransaction %}
+        <a href="{% url 'repair_shop:create_repair_transaction' %}" class="btn btn-brand-create btn-sm px-4">
+            <i class="bi bi-plus-lg me-1"></i> New Repair
+        </a>
         {% endif %}
     </div>
+    {% endif %}
 </div>
-{% endblock %}
 
+
+<!-- ════════════════════════════════════════════
+     SCOPED STYLES
+════════════════════════════════════════════ -->
+<style>
+/* ── Variables ──────────────────────────────── */
+:root {
+    --brand: #0D1226;
+    --brand-lt: #1a2340;
+    --brand-tx: #FEFBFC;
+    --accent: #4F6AF5;
+}
+
+/* ── Page title ─────────────────────────────── */
+.page-title { color: var(--brand); letter-spacing: -.3px; }
+
+/* ── Create button (green like screenshot) ───── */
+.btn-brand-create {
+    background: #0f766e;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 500;
+    transition: background .15s, transform .1s;
+}
+.btn-brand-create:hover { background: #115e59; color: #fff; transform: translateY(-1px); }
+
+/* ── Stat chips ─────────────────────────────── */
+.stat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #f1f3f9;
+    border: 1.5px solid #e2e6f0;
+    border-radius: 999px;
+    text-decoration: none;
+    color: #374151;
+    font-size: .8rem;
+    font-weight: 500;
+    transition: all .15s;
+}
+.stat-chip:hover { border-color: var(--brand); background: #eaecf7; color: var(--brand); }
+.stat-chip-active  { background: var(--brand);  color: var(--brand-tx) !important; border-color: var(--brand); }
+.stat-chip-warning { background: #fef9ec; color: #92400e !important; border-color: #f59e0b; }
+.stat-chip-info    { background: #ecf8ff; color: #0c4a6e !important; border-color: #0ea5e9; }
+.stat-chip-success { background: #ecfdf5; color: #064e3b !important; border-color: #22c55e; }
+.stat-chip-num  { font-size: .95rem; font-weight: 700; }
+.stat-chip-dot  { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.stat-chip-label { opacity: .75; }
+
+/* ── DARK FILTER BAR (matches screenshot) ─────── */
+.dark-filter-bar {
+    background: var(--brand);
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(13,18,38,.25);
+}
+.dark-filter-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.dark-filter-label {
+    color: rgba(255,255,255,.7);
+    font-size: .8rem;
+    font-weight: 500;
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+}
+
+/* Fields (white boxes) */
+.dark-filter-field {
+    position: relative;
+}
+.dark-filter-input,
+.dark-filter-select {
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: .85rem;
+    color: #111827;
+    outline: none;
+    height: 38px;
+}
+.dark-filter-input { width: 220px; }
+.dark-filter-select { min-width: 110px; cursor: pointer; appearance: auto; padding-right: 28px; }
+.dark-filter-input::placeholder { color: #9ca3af; }
+.dark-filter-input:focus,
+.dark-filter-select:focus { box-shadow: 0 0 0 2px rgba(79,106,245,.4); }
+
+/* Arrow buttons */
+.dark-filter-arrow {
+    width: 36px;
+    height: 38px;
+    border: 1.5px solid rgba(255,255,255,.3);
+    background: transparent;
+    color: rgba(255,255,255,.8);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .15s;
+}
+.dark-filter-arrow:hover {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.5);
+    color: #fff;
+}
+
+/* Go button */
+.dark-filter-go {
+    background: #fff;
+    color: var(--brand);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    height: 38px;
+}
+.dark-filter-go:hover {
+    background: #f3f4f6;
+    transform: translateY(-1px);
+}
+
+/* ── Card header strip ──────────────────────── */
+.card-header-strip {
+    background: var(--brand);
+    color: var(--brand-tx);
+}
+
+/* ── Table ──────────────────────────────────── */
+.rtable thead th {
+    background: #f8f9fb;
+    border-bottom: 2px solid #e2e6f0;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6b7280;
+    padding: .65rem 1rem;
+    white-space: nowrap;
+}
+.rtable tbody td { padding: .7rem 1rem; vertical-align: middle; border-color: #f1f3f9; }
+.rtable tbody tr { transition: background .1s; }
+.rtable tbody tr:hover { background: #f8f9ff; }
+
+/* Code badge */
+.code-badge {
+    display: inline-block;
+    background: #f1f3f9;
+    color: var(--brand);
+    border: 1px solid #e2e6f0;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-family: ui-monospace, monospace;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+}
+
+/* Technician badge */
+.tech-badge {
+    display: inline-block;
+    background: #f1f3f9;
+    color: #374151;
+    border: 1px solid #e2e6f0;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: .75rem;
+    font-weight: 500;
+}
+
+/* Customer link */
+.link-customer { color: var(--accent); }
+.link-customer:hover { color: #2d4acf; text-decoration: underline !important; }
+
+/* Status pills */
+.spill {
+    display: inline-block;
+    padding: .22em .75em;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.spill-pending { background: #fef3c7; color: #92400e; }
+.spill-inprog  { background: #e0f2fe; color: #0369a1; }
+.spill-done    { background: #dcfce7; color: #166534; }
+.spill-other   { background: #f3f4f6; color: #374151; }
+
+/* Action buttons */
+.act-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    font-size: .82rem;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .13s;
+    background: transparent;
+}
+.act-btn-view     { border-color:#0ea5e9; color:#0ea5e9; }
+.act-btn-view:hover { background:#0ea5e9; color:#fff; }
+.act-btn-edit     { border-color:#f59e0b; color:#f59e0b; }
+.act-btn-edit:hover { background:#f59e0b; color:#fff; }
+.act-btn-reassign { border-color:#6b7280; color:#6b7280; }
+.act-btn-reassign:hover { background:#6b7280; color:#fff; }
+.act-btn-receipt  { border-color:#22c55e; color:#22c55e; }
+.act-btn-receipt:hover { background:#22c55e; color:#fff; }
+.act-btn-pay      { border-color:#ef4444; color:#ef4444; }
+.act-btn-pay:hover { background:#ef4444; color:#fff; }
+.act-btn-disabled { border-color:#d1d5db; color:#d1d5db; cursor:not-allowed; }
+
+/* Empty state */
+.empty-state-icon {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: #f1f3f9;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: #9ca3af;
+}
+</style>
+
+<!-- JavaScript for date navigation -->
+<script>
+function adjustDate(direction) {
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
+
+    let month = parseInt(monthSelect.value) || new Date().getMonth() + 1;
+    let year = parseInt(yearSelect.value) || new Date().getFullYear();
+
+    month += direction;
+
+    if (month > 12) {
+        month = 1;
+        year++;
+    } else if (month < 1) {
+        month = 12;
+        year--;
+    }
+
+    monthSelect.value = month;
+    yearSelect.value = year;
+
+    // Auto-submit the form
+    document.getElementById('filterForm').submit();
+}
+
+function exportTable() {
+    // Simple CSV export
+    const table = document.getElementById('repairTable');
+    if (!table) return;
+
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        const cols = row.querySelectorAll('td, th');
+        const rowData = [];
+        cols.forEach(col => {
+            rowData.push('"' + col.innerText.replace(/"/g, '""') + '"');
+        });
+        csv.push(rowData.join(','));
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + csv.join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'repairs_' + new Date().toISOString().split('T')[0] + '.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+
+{% endblock %}

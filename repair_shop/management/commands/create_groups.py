@@ -24,12 +24,13 @@ class Command(BaseCommand):
         staff_group, created = Group.objects.get_or_create(name='Staff')
 
         # ========== TECHNICIAN PERMISSIONS ==========
-        # Can: View gadget details, create repair logs, update own logs
-        # Cannot: Delete, create customers, create repairs, etc.
+        # Can: View gadget details, create repair logs, update own logs, update repair status
+        # Cannot: Delete, create customers, create repairs, reassign technicians, etc.
         technician_perms = Permission.objects.filter(
             codename__in=[
                 'view_gadget',
                 'view_gadgetrepairtransaction',
+                'change_gadgetrepairtransaction',  # Allow technicians to update status
                 'add_gadgetrepairlog',
                 'change_gadgetrepairlog',
                 'view_gadgetrepairlog',

@@ -1,7 +1,7 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}Receipt {{ receipt.receipt_number }} - Tech CRM{% endblock %}
+{% block title %}Receipt {{ receipt.receipt_number }} - Bayo Electronics{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -22,8 +22,10 @@
             <!-- Receipt Header -->
             <div class="card-body border-bottom">
                 <div class="text-center mb-4">
-                    <h2><i class="bi bi-tools"></i> Tech CRM</h2>
-                    <p class="text-muted">Gadget Repair Service</p>
+                    <img src="{% static 'images/BAYO ELECTRONICS .jpg' %}" alt="Bayo Electronics" height="80" class="mb-2 rounded" style="object-fit: cover;">
+                    <h4 class="mb-0">Bayo Electronics</h4>
+                    <p class="text-muted small mb-0">Gadget Repair Service</p>
+                    <p class="text-muted small">Bayo Electronics System</p>
                 </div>
 
                 <div class="row mb-3">
@@ -31,7 +33,7 @@
                         <h6>Receipt Information</h6>
                         <p class="mb-1"><strong>Receipt #:</strong> {{ receipt.receipt_number }}</p>
                         <p class="mb-1"><strong>Issued:</strong> {{ receipt.issued_date|date:"M d, Y H:i" }}</p>
-                        <p class="mb-0"><strong>Amount:</strong> <span class="h5 text-success">₵{{ receipt.amount_paid }}</span></p>
+                        <p class="mb-0"><strong>Amount:</strong> <span class="h5 text-success">D{{ receipt.amount_paid }}</span></p>
                     </div>
                     <div class="col-md-6">
                         <h6>Transaction Information</h6>
@@ -89,12 +91,52 @@
                                 <td>{{ forloop.counter }}</td>
                                 <td><small>{{ log.issue_description|truncatewords:10 }}</small></td>
                                 <td><small>{{ log.resolution_description|truncatewords:10 }}</small></td>
-                                <td class="text-end">₵{{ log.repair_cost }}</td>
+                                <td class="text-end">D{{ log.repair_cost }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Payment Breakdown -->
+            <div class="card-body border-bottom">
+                <h6 class="mb-3"><i class="bi bi-wallet2"></i> Payment Breakdown</h6>
+                {% with payments=transaction.payments.all %}
+                {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Method</th>
+                                <th>Provider / Number</th>
+                                <th class="text-end">Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in payments %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% if p.payment_type == 'CASH' %}Cash
+                                    {% else %}Mobile Money{% endif %}
+                                </td>
+                                <td>
+                                    {% if p.mobile_provider %}{{ p.mobile_provider }}{% endif %}
+                                    {% if p.mobile_number %} / {{ p.mobile_number }}{% endif %}
+                                    {% if not p.mobile_provider and not p.mobile_number %}—{% endif %}
+                                </td>
+                                <td class="text-end">D{{ p.amount|floatformat:2 }}</td>
+                                <td><small>{{ p.created_at|date:"M d, Y" }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                {% endwith %}
             </div>
 
             <!-- Summary -->
@@ -111,10 +153,10 @@
                         <!-- Total -->
                         <div class="border-top pt-3">
                             <p class="mb-1">
-                                <strong>Subtotal:</strong> ₵{{ receipt.amount_paid }}
+                                <strong>Repair Cost:</strong> D{{ transaction.total_cost|floatformat:2 }}
                             </p>
                             <p class="mb-0">
-                                <strong class="h5">Amount Paid: <span class="text-success">₵{{ receipt.amount_paid }}</span></strong>
+                                <strong class="h5">Total Paid: <span class="text-success">D{{ receipt.amount_paid|floatformat:2 }}</span></strong>
                             </p>
                         </div>
                     </div>

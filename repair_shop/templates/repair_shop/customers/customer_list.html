@@ -1,55 +1,95 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}Customers - Tech CRM{% endblock %}
+{% block title %}Customers - Bayo Electronics{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1><i class="bi bi-people"></i> Customers</h1>
+
+<!-- ════════════════════════════════════════════
+     PAGE HEADER
+════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-0 page-title">Customers</h4>
+        <p class="text-muted small mb-0">Manage customer records and contact information</p>
+    </div>
     {% if perms.repair_shop.add_customer %}
-    <a href="{% url 'repair_shop:create_customer' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Add New Customer
+    <a href="{% url 'repair_shop:create_customer' %}" class="btn btn-brand-create btn-sm px-3">
+        <i class="bi bi-plus-lg me-1"></i> Add Customer
     </a>
     {% endif %}
 </div>
 
-<!-- Search Bar -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-6">
-                <input type="text" name="search" class="form-control" placeholder="Search by name or email..." 
-                    value="{{ request.GET.search }}">
+<!-- ════════════════════════════════════════════
+     DARK FILTER BAR
+════════════════════════════════════════════ -->
+<form method="get" id="customerFilterForm">
+<div class="dark-filter-bar mb-3">
+    <div class="dark-filter-inner">
+
+        <span class="dark-filter-label">
+            <i class="bi bi-funnel-fill me-1"></i>Filters:
+        </span>
+
+        <!-- Search -->
+        <div class="dark-filter-field dark-filter-field-wide">
+            <input type="text" name="search" class="dark-filter-input" placeholder="Search name, email, phone, ID number..." value="{{ request.GET.search }}">
+        </div>
+
+        <!-- ID Type -->
+        <div class="dark-filter-field">
+            <select name="id_type" class="dark-filter-select">
+                <option value="">All ID Types</option>
+                <option value="DL" {% if request.GET.id_type == 'DL' %}selected{% endif %}>Driver's License</option>
+                <option value="PP" {% if request.GET.id_type == 'PP' %}selected{% endif %}>Passport</option>
+                <option value="NI" {% if request.GET.id_type == 'NI' %}selected{% endif %}>National ID</option>
+                <option value="VC" {% if request.GET.id_type == 'VC' %}selected{% endif %}>Voter's Card</option>
+                <option value="OTHER" {% if request.GET.id_type == 'OTHER' %}selected{% endif %}>Other</option>
+            </select>
             </div>
-            <div class="col-md-6">
-                <button type="submit" class="btn btn-info">
-                    <i class="bi bi-search"></i> Search
+
+        <!-- Go Button -->
+        <button type="submit" class="dark-filter-go">
+            Go
                 </button>
-                {% if request.GET.search %}
-                <a href="{% url 'repair_shop:customer_list' %}" class="btn btn-secondary">
-                    <i class="bi bi-x-circle"></i> Clear
+
+        {% if request.GET.search or request.GET.id_type %}
+        <a href="{% url 'repair_shop:customer_list' %}" class="btn btn-sm btn-outline-light ms-2">
+            <i class="bi bi-x-lg me-1"></i>Clear
                 </a>
                 {% endif %}
-            </div>
-        </form>
+
     </div>
 </div>
+</form>
 
-<!-- Customers Table -->
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">
-            <i class="bi bi-table"></i> Customer List
-            {% if customers %}
-            <span class="badge bg-primary float-end">{{ customers.count }} customers</span>
-            {% endif %}
-        </h5>
+<!-- Quick action buttons row -->
+<div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{% url 'repair_shop:customer_list' %}" class="btn btn-outline-secondary btn-sm {% if not request.GET.search and not request.GET.id_type %}active{% endif %}">
+        <i class="bi bi-people me-1"></i>All Customers
+    </a>
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportCustomers()">
+        <i class="bi bi-download me-1"></i>Export
+    </button>
+</div>
+
+<!-- ════════════════════════════════════════════
+     TABLE
+════════════════════════════════════════════ -->
+<div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+    <div class="card-header-strip d-flex align-items-center justify-content-between px-4 py-3">
+        <span class="fw-semibold" style="font-size:.9rem;">
+            <i class="bi bi-table me-1 opacity-75"></i> Customer List
+        </span>
+        <span class="badge rounded-pill" style="background:rgba(255,255,255,.15);font-size:.75rem;">
+            {% if customers %}{{ customers.count }}{% else %}0{% endif %} customers
+        </span>
     </div>
-    <div class="card-body">
+
         {% if customers %}
         <div class="table-responsive">
-            <table class="table table-hover table-striped">
-                <thead class="table-light">
+        <table class="table rtable mb-0" id="customerTable">
+            <thead>
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
@@ -57,97 +97,308 @@
                         <th>Phone</th>
                         <th>ID Type</th>
                         <th>Registered</th>
-                        <th>Actions</th>
+                    <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for customer in customers %}
                     <tr>
                         <td>
-                            <span class="badge bg-secondary">{{ customer.id }}</span>
+                        <span class="id-badge">#{{ customer.id }}</span>
                         </td>
                         <td>
-                            <strong>{{ customer.first_name }} {{ customer.last_name }}</strong>
+                        <div class="fw-medium" style="font-size:.875rem;">{{ customer.first_name }} {{ customer.last_name }}</div>
+                        </td>
+                    <td style="font-size:.875rem;">
+                        {% if customer.email %}
+                            <a href="mailto:{{ customer.email }}" class="link-customer">{{ customer.email }}</a>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                        </td>
+                    <td style="font-size:.875rem;">
+                        {% if customer.phone_number %}
+                            {{ customer.phone_number }}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
                         </td>
                         <td>
-                            <a href="mailto:{{ customer.email }}">{{ customer.email|default:"N/A" }}</a>
+                        <span class="type-pill type-{{ customer.id_type|lower }}">
+                            {{ customer.get_id_type_display }}
+                        </span>
                         </td>
-                        <td>
-                            {{ customer.phone_number|default:"N/A" }}
-                        </td>
-                        <td>
-                            <span class="badge bg-info">{{ customer.get_id_type_display }}</span>
-                        </td>
-                        <td>
+                    <td class="text-muted" style="font-size:.8rem; white-space:nowrap;">
                             {{ customer.created_at|date:"M d, Y" }}
                         </td>
                         <td>
-                            <!-- View Button -->
+                        <div class="d-flex gap-1 justify-content-center">
                             <a href="{% url 'repair_shop:customer_detail' customer.id %}" 
-                               class="btn btn-sm btn-info" title="View Details">
+                               class="act-btn act-btn-view" title="View Details">
                                 <i class="bi bi-eye"></i>
                             </a>
-
-                            <!-- Edit Button -->
                             {% if perms.repair_shop.change_customer %}
                             <a href="{% url 'repair_shop:update_customer' customer.id %}" 
-                               class="btn btn-sm btn-warning" title="Edit">
+                               class="act-btn act-btn-edit" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             {% endif %}
-
-                            <!-- Delete Button (Superuser Only) -->
                             {% if user.is_superuser %}
-                            <button type="button" class="btn btn-sm btn-danger" 
+                            <button type="button" class="act-btn act-btn-delete"
                                     data-bs-toggle="modal" data-bs-target="#deleteModal{{ customer.id }}"
                                     title="Delete">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
 
-                            <!-- Delete Confirmation Modal -->
+                <!-- Delete Modal -->
+                {% if user.is_superuser %}
                             <div class="modal fade" id="deleteModal{{ customer.id }}" tabindex="-1">
-                                <div class="modal-dialog">
+                    <div class="modal-dialog modal-sm modal-dialog-centered">
                                     <div class="modal-content">
-                                        <div class="modal-header">
+                            <div class="modal-header border-0">
                                             <h5 class="modal-title">Delete Customer</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
-                                        <div class="modal-body">
-                                            <p>Are you sure you want to delete <strong>{{ customer.first_name }} {{ customer.last_name }}</strong>?</p>
-                                            <p class="text-danger"><small>This action cannot be undone.</small></p>
+                            <div class="modal-body text-center">
+                                <i class="bi bi-exclamation-triangle-fill text-warning fs-1 mb-3 d-block"></i>
+                                <p>Delete <strong>{{ customer.first_name }} {{ customer.last_name }}</strong>?</p>
+                                <p class="text-danger small">This cannot be undone.</p>
                                         </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <div class="modal-footer border-0 justify-content-center">
+                                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
                                             <a href="{% url 'repair_shop:delete_customer' customer.id %}" 
-                                               class="btn btn-danger">
-                                                Delete
-                                            </a>
+                                   class="btn btn-danger btn-sm">Delete</a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             {% endif %}
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-        <div class="alert alert-info" role="alert">
-            <i class="bi bi-info-circle"></i>
-            <strong>No customers found.</strong>
-            {% if perms.repair_shop.add_customer %}
-            <a href="{% url 'repair_shop:create_customer' %}" class="alert-link">Create the first one.</a>
-            {% endif %}
+    <div class="text-center py-5 px-3">
+        <div class="empty-state-icon mb-3">
+            <i class="bi bi-people"></i>
         </div>
+        <h6 class="fw-semibold mb-1">No customers found</h6>
+        <p class="text-muted small mb-3">Try adjusting your search or add a new customer.</p>
+        {% if perms.repair_shop.add_customer %}
+        <a href="{% url 'repair_shop:create_customer' %}" class="btn btn-brand-create btn-sm px-4">
+            <i class="bi bi-plus-lg me-1"></i> Add Customer
+        </a>
         {% endif %}
     </div>
+    {% endif %}
 </div>
 
-<!-- Bootstrap Modal JS Script -->
-<script>
-    // Modal initialization is handled by Bootstrap 5 automatically
-</script>
-{% endblock %}
+<!-- ════════════════════════════════════════════
+     SCOPED STYLES
+════════════════════════════════════════════ -->
+<style>
+/* ── Variables ──────────────────────────────── */
+:root {
+    --brand: #0D1226;
+    --brand-lt: #1a2340;
+    --brand-tx: #FEFBFC;
+    --accent: #4F6AF5;
+}
 
+/* ── Page title ─────────────────────────────── */
+.page-title { color: var(--brand); letter-spacing: -.3px; }
+
+/* ── Create button (green) ───────────────────── */
+.btn-brand-create {
+    background: #0f766e;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 500;
+    transition: background .15s, transform .1s;
+}
+.btn-brand-create:hover { background: #115e59; color: #fff; transform: translateY(-1px); }
+
+/* ── DARK FILTER BAR ────────────────────────── */
+.dark-filter-bar {
+    background: var(--brand);
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(13,18,38,.25);
+}
+.dark-filter-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.dark-filter-label {
+    color: rgba(255,255,255,.7);
+    font-size: .8rem;
+    font-weight: 500;
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.dark-filter-field { position: relative; }
+.dark-filter-field-wide { flex: 1; min-width: 250px; max-width: 350px; }
+
+.dark-filter-input,
+.dark-filter-select {
+    background: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: .85rem;
+    color: #111827;
+    outline: none;
+    height: 38px;
+    width: 100%;
+}
+.dark-filter-input::placeholder { color: #9ca3af; }
+.dark-filter-input:focus,
+.dark-filter-select:focus { box-shadow: 0 0 0 2px rgba(79,106,245,.4); }
+.dark-filter-select { cursor: pointer; min-width: 130px; }
+
+.dark-filter-go {
+    background: #fff;
+    color: var(--brand);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    height: 38px;
+}
+.dark-filter-go:hover {
+    background: #f3f4f6;
+    transform: translateY(-1px);
+}
+
+/* ── Card header strip ──────────────────────── */
+.card-header-strip {
+    background: var(--brand);
+    color: var(--brand-tx);
+}
+
+/* ── Table ──────────────────────────────────── */
+.rtable thead th {
+    background: #f8f9fb;
+    border-bottom: 2px solid #e2e6f0;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #6b7280;
+    padding: .65rem 1rem;
+    white-space: nowrap;
+}
+.rtable tbody td { padding: .7rem 1rem; vertical-align: middle; border-color: #f1f3f9; }
+.rtable tbody tr { transition: background .1s; }
+.rtable tbody tr:hover { background: #f8f9ff; }
+
+/* ID badge */
+.id-badge {
+    display: inline-block;
+    background: #f1f3f9;
+    color: var(--brand);
+    border: 1px solid #e2e6f0;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-family: ui-monospace, monospace;
+    font-size: .72rem;
+    font-weight: 600;
+}
+
+/* Type pills */
+.type-pill {
+    display: inline-block;
+    padding: .22em .75em;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.type-dl { background: #dbeafe; color: #1e40af; }
+.type-pp { background: #dcfce7; color: #166534; }
+.type-ni { background: #fef3c7; color: #92400e; }
+.type-vc { background: #fce7f3; color: #9d174d; }
+.type-other { background: #f3f4f6; color: #374151; }
+
+/* Customer link */
+.link-customer { color: var(--accent); text-decoration: none; }
+.link-customer:hover { color: #2d4acf; text-decoration: underline; }
+
+/* Action buttons */
+.act-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    font-size: .82rem;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all .13s;
+    background: transparent;
+}
+.act-btn-view     { border-color:#0ea5e9; color:#0ea5e9; }
+.act-btn-view:hover { background:#0ea5e9; color:#fff; }
+.act-btn-edit     { border-color:#f59e0b; color:#f59e0b; }
+.act-btn-edit:hover { background:#f59e0b; color:#fff; }
+.act-btn-delete   { border-color:#ef4444; color:#ef4444; }
+.act-btn-delete:hover { background:#ef4444; color:#fff; }
+
+/* Empty state */
+.empty-state-icon {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: #f1f3f9;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: #9ca3af;
+}
+</style>
+
+<!-- JavaScript for export -->
+<script>
+function exportCustomers() {
+    const table = document.getElementById('customerTable');
+    if (!table) return;
+
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        const cols = row.querySelectorAll('td, th');
+        const rowData = [];
+        cols.forEach(col => {
+            rowData.push('"' + col.innerText.replace(/"/g, '""') + '"');
+        });
+        csv.push(rowData.join(','));
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + csv.join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'customers_' + new Date().toISOString().split('T')[0] + '.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+
+{% endblock %}

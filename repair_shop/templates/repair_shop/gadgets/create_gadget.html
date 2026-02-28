@@ -1,141 +1,229 @@
 {% extends 'repair_shop/base.html' %}
 {% load static %}
 
-{% block title %}{% if form.instance.pk %}Edit{% else %}Register{% endif %} Gadget - Tech CRM{% endblock %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}Register{% endif %} Gadget - Bayo Electronics{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1><i class="bi bi-phone"></i> {% if form.instance.pk %}Edit Gadget{% else %}Register New Gadget{% endif %}</h1>
+
+<!-- ════════════════════════════════════════════
+     PAGE HEADER
+════════════════════════════════════════════ -->
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-0 page-title">
+            {% if form.instance.pk %}
+                <i class="bi bi-pencil-square me-2"></i>Edit Gadget
+            {% else %}
+                <i class="bi bi-phone me-2"></i>Register Gadget
+            {% endif %}
+        </h4>
+        <p class="text-muted small mb-0">
+            {% if form.instance.pk %}
+                Update device information
+            {% else %}
+                Register a new device for repair tracking
+            {% endif %}
+        </p>
+    </div>
+    <a href="{% url 'repair_shop:gadget_list' %}" class="btn btn-outline-secondary btn-sm px-3">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
 </div>
 
-<div class="row">
+<div class="row g-4">
+    <!-- Main Form -->
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Gadget Details</h5>
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+            <!-- Dark Header -->
+            <div class="card-header-strip px-4 py-3">
+                <h5 class="mb-0 fw-semibold" style="font-size:.95rem;">
+                    <i class="bi bi-device-ssd me-2"></i>
+                    {% if form.instance.pk %}
+                        Update Gadget Details
+                    {% else %}
+                        Enter Gadget Details
+                    {% endif %}
+                </h5>
             </div>
-            <div class="card-body">
-                <form method="post" novalidate>
+
+            <div class="card-body p-4">
+                <form method="post" novalidate id="gadgetForm">
                     {% csrf_token %}
                     
-                    <div class="row">
-                        <!-- Customer -->
-                        <div class="col-md-12 mb-3">
-                            <label for="{{ form.customer.id_for_label }}" class="form-label">
-                                <i class="bi bi-person"></i> Customer *
+                    <!-- Non-field Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    <!-- Customer Selection -->
+                    <div class="form-section mb-4">
+                        <div class="form-section-title">
+                            <i class="bi bi-person"></i> Customer
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label for="{{ form.customer.id_for_label }}" class="form-label-brand">
+                                    Select Customer <span class="text-danger">*</span>
                             </label>
                             {{ form.customer }}
                             {% if form.customer.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.customer.errors }}</div>
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.customer.errors %}{{ error }}{% endfor %}
+                                </div>
                             {% endif %}
+                                <div class="form-text small text-muted mt-1">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Don't see the customer? <a href="{% url 'repair_shop:create_customer' %}" target="_blank">Add new customer first</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Device Information -->
+                    <div class="form-section mb-4">
+                        <div class="form-section-title">
+                            <i class="bi bi-device-ssd"></i> Device Information
                         </div>
 
-                        <!-- Gadget Type -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.gadget_type.id_for_label }}" class="form-label">
-                                <i class="bi bi-info-circle"></i> Device Type *
+                        <div class="row g-3">
+                            <!-- Device Type -->
+                            <div class="col-md-6">
+                                <label for="{{ form.gadget_type.id_for_label }}" class="form-label-brand">
+                                    Device Type <span class="text-danger">*</span>
                             </label>
                             {{ form.gadget_type }}
                             {% if form.gadget_type.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.gadget_type.errors }}</div>
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.gadget_type.errors %}{{ error }}{% endfor %}
+                                </div>
                             {% endif %}
                         </div>
 
                         <!-- Brand -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.gadget_brand.id_for_label }}" class="form-label">
-                                <i class="bi bi-tag"></i> Brand *
+                            <div class="col-md-6">
+                                <label for="{{ form.gadget_brand.id_for_label }}" class="form-label-brand">
+                                    Brand <span class="text-danger">*</span>
                             </label>
                             {{ form.gadget_brand }}
                             {% if form.gadget_brand.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.gadget_brand.errors }}</div>
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.gadget_brand.errors %}{{ error }}{% endfor %}
+                                </div>
                             {% endif %}
                         </div>
 
                         <!-- Model -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.gadget_model.id_for_label }}" class="form-label">
-                                <i class="bi bi-info-circle"></i> Model *
+                            <div class="col-md-6">
+                                <label for="{{ form.gadget_model.id_for_label }}" class="form-label-brand">
+                                    Model <span class="text-danger">*</span>
                             </label>
                             {{ form.gadget_model }}
                             {% if form.gadget_model.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.gadget_model.errors }}</div>
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.gadget_model.errors %}{{ error }}{% endfor %}
+                                </div>
                             {% endif %}
                         </div>
 
-                        <!-- IMEI Number -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.imei_number.id_for_label }}" class="form-label">
-                                <i class="bi bi-hash"></i> IMEI Number
+                            <!-- IMEI -->
+                            <div class="col-md-6">
+                                <label for="{{ form.imei_number.id_for_label }}" class="form-label-brand">
+                                    IMEI / Serial Number
                             </label>
                             {{ form.imei_number }}
                             {% if form.imei_number.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.imei_number.errors }}</div>
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.imei_number.errors %}{{ error }}{% endfor %}
+                                </div>
                             {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Specifications -->
+                    <div class="form-section mb-4">
+                        <div class="form-section-title">
+                            <i class="bi bi-cpu"></i> Specifications (Optional)
                         </div>
 
+                        <div class="row g-3">
                         <!-- Color -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.color.id_for_label }}" class="form-label">
-                                <i class="bi bi-palette"></i> Color
+                            <div class="col-md-4">
+                                <label for="{{ form.color.id_for_label }}" class="form-label-brand">
+                                    Color
                             </label>
                             {{ form.color }}
                             {% if form.color.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.color.errors }}</div>
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.color.errors %}{{ error }}{% endfor %}
+                                </div>
                             {% endif %}
                         </div>
 
-                        <!-- Storage Capacity -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.storage_capacity.id_for_label }}" class="form-label">
-                                <i class="bi bi-archive"></i> Storage
+                            <!-- Storage -->
+                            <div class="col-md-4">
+                                <label for="{{ form.storage_capacity.id_for_label }}" class="form-label-brand">
+                                    Storage
                             </label>
                             {{ form.storage_capacity }}
                             {% if form.storage_capacity.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.storage_capacity.errors }}</div>
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.storage_capacity.errors %}{{ error }}{% endfor %}
+                                </div>
                             {% endif %}
                         </div>
 
                         <!-- RAM -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.ram.id_for_label }}" class="form-label">
-                                <i class="bi bi-speedometer"></i> RAM
+                            <div class="col-md-4">
+                                <label for="{{ form.ram.id_for_label }}" class="form-label-brand">
+                                    RAM
                             </label>
                             {{ form.ram }}
                             {% if form.ram.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.ram.errors }}</div>
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.ram.errors %}{{ error }}{% endfor %}
+                                </div>
                             {% endif %}
+                            </div>
+                        </div>
                         </div>
 
                         <!-- Description -->
-                        <div class="col-md-12 mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">
-                                <i class="bi bi-file-text"></i> Description
+                    <div class="form-section mb-4">
+                        <div class="form-section-title">
+                            <i class="bi bi-file-text"></i> Notes
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="{{ form.description.id_for_label }}" class="form-label-brand">
+                                    Description / Condition
                             </label>
                             {{ form.description }}
                             {% if form.description.errors %}
-                            <div class="alert alert-danger mt-2">{{ form.description.errors }}</div>
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                </div>
                             {% endif %}
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Form Errors -->
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger" role="alert">
-                        <h5 class="alert-heading">Form Errors</h5>
-                        {% for error in form.non_field_errors %}
-                        <p class="mb-0">{{ error }}</p>
-                        {% endfor %}
-                    </div>
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-brand-create px-4">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {% if form.instance.pk %}
+                                Update Gadget
+                            {% else %}
+                                Register Gadget
                     {% endif %}
-
-                    <!-- Buttons -->
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle"></i> {% if form.instance.pk %}Update{% else %}Register{% endif %} Gadget
                         </button>
-                        <a href="{% url 'repair_shop:gadget_list' %}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Cancel
+                        <a href="{% url 'repair_shop:gadget_list' %}" class="btn btn-outline-secondary px-4">
+                            <i class="bi bi-x-lg me-1"></i> Cancel
                         </a>
                     </div>
                 </form>
@@ -143,20 +231,137 @@
         </div>
     </div>
 
-    <!-- Info Box -->
+    <!-- Help Sidebar -->
     <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Help</h5>
+        <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+            <div class="card-header-strip px-4 py-3" style="background: #1a2340;">
+                <h5 class="mb-0 fw-semibold" style="font-size:.9rem;">
+                    <i class="bi bi-question-circle me-2"></i>Form Guide
+                </h5>
             </div>
-            <div class="card-body">
-                <p><strong>Device Type:</strong> Choose from Phone, Tablet, Laptop, etc.</p>
-                <p><strong>IMEI/Serial:</strong> Optional but helpful for tracking</p>
-                <p><strong>Specifications:</strong> Help identify the device later</p>
-                <hr>
-                <p class="text-muted small">All fields marked with * are required.</p>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <h6 class="fw-semibold mb-2" style="font-size:.85rem; color: var(--brand);">
+                        <i class="bi bi-asterisk text-danger me-1"></i> Required Fields
+                    </h6>
+                    <p class="text-muted small mb-0">Customer, Device Type, Brand, and Model are required.</p>
+                </div>
+
+                <div class="mb-3">
+                    <h6 class="fw-semibold mb-2" style="font-size:.85rem; color: var(--brand);">
+                        <i class="bi bi-phone me-1"></i> Device Types
+                    </h6>
+                    <ul class="list-unstyled small text-muted mb-0">
+                        <li class="mb-1">📱 Smartphone</li>
+                        <li class="mb-1">💻 Laptop</li>
+                        <li class="mb-1">🖥️ Desktop</li>
+                        <li class="mb-1">📟 Tablet</li>
+                        <li>🔧 Other</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-info border-0" style="background: #f8f9ff; border-radius: 8px;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    <small>IMEI/Serial helps track devices. Specifications help identify the device later.</small>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ════════════════════════════════════════════
+     SCOPED STYLES
+════════════════════════════════════════════ -->
+<style>
+:root {
+    --brand: #0D1226;
+    --brand-lt: #1a2340;
+    --brand-tx: #FEFBFC;
+    --accent: #4F6AF5;
+}
+
+.page-title { color: var(--brand); letter-spacing: -.3px; }
+
+/* Card header strip */
+.card-header-strip {
+    background: var(--brand);
+    color: var(--brand-tx);
+}
+
+/* Form sections */
+.form-section { border-bottom: 1px solid #f1f3f9; padding-bottom: 1.5rem; }
+.form-section:last-of-type { border-bottom: none; padding-bottom: 0; }
+
+.form-section-title {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--brand);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* Form labels */
+.form-label-brand {
+    font-size: .8rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: .4rem;
+    display: block;
+}
+
+/* Form inputs - styled to match brand */
+.form-control, .form-select {
+    border: 1.5px solid #e2e6f0;
+    border-radius: 8px;
+    padding: .6rem .9rem;
+    font-size: .9rem;
+    transition: all .15s;
+    background: #fff;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,106,245,.12);
+    outline: none;
+}
+.form-control::placeholder { color: #9ca3af; }
+
+/* Create button (green) */
+.btn-brand-create {
+    background: #0f766e;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .85rem;
+    font-weight: 500;
+    transition: all .15s;
+}
+.btn-brand-create:hover { background: #115e59; color: #fff; transform: translateY(-1px); }
+
+/* Invalid feedback */
+.invalid-feedback {
+    font-size: .75rem;
+    color: #dc2626;
+    margin-top: .25rem;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('gadgetForm');
+    if (form) {
+        form.addEventListener('submit', function() {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Saving...';
+            }
+        });
+    }
+});
+</script>
+
 {% endblock %}
